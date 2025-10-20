@@ -5,6 +5,8 @@ KudoAiBot - AI-powered Telegram bot
 import os
 import logging
 import asyncio
+import signal
+import sys
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
@@ -40,19 +42,49 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 PUBLIC_URL = os.getenv("PUBLIC_URL")
 PORT = int(os.getenv("PORT", 8080))
 TELEGRAM_MODE = os.getenv("TELEGRAM_MODE", "webhook")
+DATABASE_URL = os.getenv("DATABASE_URL")
+YOOKASSA_SECRET_KEY = os.getenv("YOOKASSA_SECRET_KEY")
+YOOKASSA_SHOP_ID = os.getenv("YOOKASSA_SHOP_ID")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
+# Проверка обязательных переменных окружения
 if not BOT_TOKEN:
     raise RuntimeError("❌ BOT_TOKEN не найден в переменных окружения")
 
+if not DATABASE_URL:
+    raise RuntimeError("❌ DATABASE_URL не найден в переменных окружения")
+
+# Проверка опциональных переменных с предупреждениями
+if not PUBLIC_URL and TELEGRAM_MODE == "webhook":
+    logging.warning("⚠️ PUBLIC_URL не установлен, но используется webhook режим")
+
+if not YOOKASSA_SECRET_KEY:
+    logging.warning("⚠️ YOOKASSA_SECRET_KEY не установлен - платежи недоступны")
+
+if not YOOKASSA_SHOP_ID:
+    logging.warning("⚠️ YOOKASSA_SHOP_ID не установлен - платежи недоступны")
+
+if not OPENAI_API_KEY:
+    logging.warning("⚠️ OPENAI_API_KEY не установлен - генерация видео недоступна")
+
+# Настройка логирования
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('logs/bot.log', encoding='utf-8')
+    ]
 )
 log = logging.getLogger("kudoaibot")
 
 # Инициализация бота
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher()
+
+# Переменные для graceful shutdown
+shutdown_event = asyncio.Event()
+runner = None
 
 # === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
 
@@ -75,6 +107,21 @@ async def get_user_language(user_id: int) -> str:
     user = await users.get_user(user_id)
     return user['language'] if user else 'ru'
 
+async def get_user_data(user_id: int) -> dict:
+    """Получить данные пользователя включая подписку"""
+    user = await users.get_user(user_id)
+    if not user:
+        return {'subscription_type': 'Без подписки', 'videos_left': 0}
+    
+    # Получаем статус подписки
+    status = await billing.get_user_subscription_status(user_id)
+    
+    return {
+        'subscription_type': status.get('subscription_type', 'Без подписки'),
+        'videos_left': status.get('balance', 0),
+        'created_at': user.get('created_at', 'Неизвестно')
+    }
+
 # === ОБРАБОТЧИКИ КОМАНД ===
 
 @dp.message(CommandStart())
@@ -83,8 +130,153 @@ async def cmd_start(message: Message):
     await ensure_user_exists(message)
     user_language = await get_user_language(message.from_user.id)
     
-    welcome_text = get_text(user_language, "welcome")
+    # Получаем данные пользователя для приветствия
+    user_id = message.from_user.id
+    user_data = await get_user_data(user_id)
+    name = message.from_user.first_name or "друг"
+    plan = user_data.get('subscription_type', 'Без подписки')
+    videos_left = user_data.get('videos_left', 0)
+    
+    welcome_text = get_text(user_language, "welcome", 
+                           name=name, 
+                           plan=plan, 
+                           videos_left=videos_left)
     await message.answer(
+        welcome_text,
+        reply_markup=main_menu(user_language)
+    )
+
+@dp.message(Command("help"))
+async def cmd_help(message: Message):
+    """Обработчик команды /help"""
+    await ensure_user_exists(message)
+    user_language = await get_user_language(message.from_user.id)
+    
+    help_text = get_text(user_language, "help_text")
+    await message.answer(help_text)
+
+# === ОБРАБОТЧИКИ CALLBACK КНОПОК ===
+
+@dp.callback_query(F.data == "menu_create_video")
+async def callback_menu_create_video(callback: CallbackQuery):
+    """Обработчик кнопки 'Создать видео'"""
+    await callback.answer()
+    await ensure_user_exists(callback.message)
+    user_language = await get_user_language(callback.from_user.id)
+    
+    # Проверяем подписку
+    user_id = callback.from_user.id
+    user_data = await get_user_data(user_id)
+    videos_left = user_data.get('videos_left', 0)
+    
+    if videos_left <= 0:
+        no_videos_text = get_text(user_language, "no_videos_left")
+        await callback.message.edit_text(
+            no_videos_text,
+            reply_markup=tariff_selection(user_language)
+        )
+        return
+    
+    # Показываем меню выбора ориентации
+    orientation_text = get_text(user_language, "choose_orientation")
+    from utils.keyboards import orientation_menu
+    await callback.message.edit_text(
+        orientation_text,
+        reply_markup=orientation_menu(user_language)
+    )
+
+@dp.callback_query(F.data == "menu_examples")
+async def callback_menu_examples(callback: CallbackQuery):
+    """Обработчик кнопки 'Примеры'"""
+    await callback.answer()
+    await ensure_user_exists(callback.message)
+    user_language = await get_user_language(callback.from_user.id)
+    
+    examples_text = get_text(user_language, "examples")
+    from utils.keyboards import video_ready_keyboard
+    await callback.message.edit_text(
+        examples_text,
+        reply_markup=video_ready_keyboard(user_language)
+    )
+
+@dp.callback_query(F.data == "menu_profile")
+async def callback_menu_profile(callback: CallbackQuery):
+    """Обработчик кнопки 'Профиль'"""
+    await callback.answer()
+    await ensure_user_exists(callback.message)
+    user_id = callback.from_user.id
+    user_language = await get_user_language(user_id)
+    
+    # Получаем данные пользователя
+    user_data = await get_user_data(user_id)
+    name = callback.from_user.first_name or "Пользователь"
+    plan = user_data.get('subscription_type', 'Без подписки')
+    videos_left = user_data.get('videos_left', 0)
+    
+    # Получаем дату регистрации
+    user = await users.get_user(user_id)
+    reg_date = user.get('created_at', 'Неизвестно') if user else 'Неизвестно'
+    
+    profile_text = get_text(user_language, "profile",
+                           name=name,
+                           plan=plan,
+                           videos_left=videos_left,
+                           date=reg_date)
+    
+    from utils.keyboards import tariff_selection
+    await callback.message.edit_text(
+        profile_text,
+        reply_markup=tariff_selection(user_language)
+    )
+
+@dp.callback_query(F.data == "menu_help")
+async def callback_menu_help(callback: CallbackQuery):
+    """Обработчик кнопки 'Помощь'"""
+    await callback.answer()
+    await ensure_user_exists(callback.message)
+    user_language = await get_user_language(callback.from_user.id)
+    
+    help_text = get_text(user_language, "help_text")
+    from utils.keyboards import help_keyboard
+    await callback.message.edit_text(
+        help_text,
+        reply_markup=help_keyboard(user_language)
+    )
+
+@dp.callback_query(F.data == "menu_language")
+async def callback_menu_language(callback: CallbackQuery):
+    """Обработчик кнопки 'Язык'"""
+    await callback.answer()
+    await ensure_user_exists(callback.message)
+    user_language = await get_user_language(callback.from_user.id)
+    
+    language_text = get_text(user_language, "choose_language")
+    from utils.keyboards import language_selection
+    await callback.message.edit_text(
+        language_text,
+        reply_markup=language_selection()
+    )
+
+@dp.callback_query(F.data == "main_menu")
+async def callback_main_menu(callback: CallbackQuery):
+    """Обработчик кнопки 'Главное меню'"""
+    await callback.answer()
+    await ensure_user_exists(callback.message)
+    user_language = await get_user_language(callback.from_user.id)
+    
+    # Получаем данные пользователя для приветствия
+    user_id = callback.from_user.id
+    user_data = await get_user_data(user_id)
+    name = callback.from_user.first_name or "друг"
+    plan = user_data.get('subscription_type', 'Без подписки')
+    videos_left = user_data.get('videos_left', 0)
+    
+    welcome_text = get_text(user_language, "welcome", 
+                           name=name, 
+                           plan=plan, 
+                           videos_left=videos_left)
+    
+    await callback.message.edit_text(
         welcome_text,
         reply_markup=main_menu(user_language)
     )
@@ -407,27 +599,6 @@ async def handle_main_menu(callback: CallbackQuery):
 
 # === ЗАПУСК БОТА ===
 
-async def on_startup():
-    """Действия при запуске бота"""
-    log.info("🚀 Запуск бота...")
-    
-    # Инициализируем БД
-    db_ok = await database.init_db()
-    if not db_ok:
-        log.error("❌ Не удалось инициализировать БД")
-        return
-    
-    # Запускаем задачу проверки истекших подписок
-    asyncio.create_task(check_expired_subscriptions_task())
-    
-    if TELEGRAM_MODE == "webhook":
-        webhook_url = f"{PUBLIC_URL}/webhook"
-        await bot.set_webhook(webhook_url)
-        log.info(f"✅ Webhook установлен: {webhook_url}")
-    else:
-        await bot.delete_webhook()
-        log.info("✅ Polling mode")
-
 async def on_shutdown():
     """Действия при остановке бота"""
     log.info("🛑 Остановка бота...")
@@ -445,18 +616,93 @@ async def check_expired_subscriptions_task():
         except Exception as e:
             log.error(f"❌ Ошибка проверки подписок: {e}")
 
+def signal_handler(signum, frame):
+    """Обработчик сигналов для graceful shutdown"""
+    log.info(f"🛑 Получен сигнал {signum}, начинаем graceful shutdown...")
+    shutdown_event.set()
+
+async def graceful_shutdown():
+    """Graceful shutdown функции"""
+    log.info("🛑 Начинаем graceful shutdown...")
+    
+    # Останавливаем webhook
+    if TELEGRAM_MODE == "webhook":
+        try:
+            await bot.delete_webhook()
+            log.info("✅ Webhook удален")
+        except Exception as e:
+            log.error(f"❌ Ошибка удаления webhook: {e}")
+    
+    # Закрываем соединение с ботом
+    try:
+        await bot.session.close()
+        log.info("✅ Сессия бота закрыта")
+    except Exception as e:
+        log.error(f"❌ Ошибка закрытия сессии бота: {e}")
+    
+    # Закрываем соединение с БД
+    try:
+        await database.close()
+        log.info("✅ Соединение с БД закрыто")
+    except Exception as e:
+        log.error(f"❌ Ошибка закрытия БД: {e}")
+    
+    log.info("✅ Graceful shutdown завершен")
+
+async def setup_bot():
+    """Инициализация бота и обработчиков"""
+    log.info("🔧 Инициализация бота...")
+    
+    # Подключение к базе данных
+    await database.connect()
+    log.info("✅ Подключение к базе данных установлено")
+    
+    # Создание таблиц
+    await database.create_tables()
+    log.info("✅ Таблицы базы данных созданы/обновлены")
+    
+    # Запуск задачи проверки истекших подписок
+    asyncio.create_task(check_expired_subscriptions_task())
+    log.info("✅ Задача проверки подписок запущена")
+
+async def setup_web_app() -> web.Application:
+    """Инициализация web приложения"""
+    log.info("🔧 Инициализация web приложения...")
+    
+    app = web.Application()
+    
+    async def telegram_webhook(request):
+        """Обработчик Telegram webhook"""
+        try:
+            data = await request.json()
+            update = types.Update(**data)
+            await dp.feed_update(bot, update)
+            return web.Response(text="OK")
+        except Exception as e:
+            log.exception(f"Ошибка webhook: {e}")
+            return web.Response(text="OK", status=200)
+    
+    # Health check маршрут для Railway
+    app.router.add_get('/', lambda _: web.Response(text="Bot is running ✅"))
+    app.router.add_post('/webhook', telegram_webhook)
+    app.router.add_post('/yookassa_webhook', yookassa_webhook)
+    
+    log.info("✅ Web приложение настроено")
+    return app
+
 async def main():
     """Главная функция"""
+    # Инициализация бота
+    await setup_bot()
+    
     if TELEGRAM_MODE == "webhook":
         # Запуск в режиме webhook
-        app = web.Application()
-        async def webhook_handler(req):
-            return await dp.feed_webhook_update(bot, await req.json())
+        app = await setup_web_app()
         
-        app.router.add_post('/webhook', webhook_handler)
-        app.router.add_post('/yookassa_webhook', yookassa_webhook)
-        
-        await on_startup()
+        # Установка webhook
+        webhook_url = f"{PUBLIC_URL}/webhook"
+        await bot.set_webhook(webhook_url)
+        log.info(f"✅ Webhook установлен: {webhook_url}")
         
         runner = web.AppRunner(app)
         await runner.setup()
@@ -465,16 +711,36 @@ async def main():
         
         log.info(f"✅ Бот запущен в режиме webhook на порту {PORT}")
         
-        # Ждем бесконечно
-        await asyncio.Event().wait()
+        # Настраиваем обработчики сигналов
+        signal.signal(signal.SIGTERM, signal_handler)
+        signal.signal(signal.SIGINT, signal_handler)
+        
+        # Ждем сигнал завершения
+        await shutdown_event.wait()
+        
+        # Graceful shutdown
+        await graceful_shutdown()
     else:
         # Запуск в режиме polling
-        await on_startup()
-        log.info("✅ Бот запущен в режиме polling")
-        await dp.start_polling(bot)
+        await bot.delete_webhook()
+        log.info("✅ Polling mode")
+        
+        # Настраиваем обработчики сигналов
+        signal.signal(signal.SIGTERM, signal_handler)
+        signal.signal(signal.SIGINT, signal_handler)
+        
+        try:
+            await dp.start_polling(bot)
+        except Exception as e:
+            log.error(f"❌ Ошибка polling: {e}")
+        finally:
+            await graceful_shutdown()
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        log.info("👋 Бот остановлен")
+        log.info("🛑 Получен KeyboardInterrupt")
+    except Exception as e:
+        log.error(f"❌ Критическая ошибка: {e}")
+        sys.exit(1)

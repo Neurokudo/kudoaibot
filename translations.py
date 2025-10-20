@@ -455,10 +455,17 @@ def get_text(language: str, key: str, **kwargs) -> str:
     if key not in LANG[language]:
         # Fallback на английский
         if key in LANG["en"]:
-            return LANG["en"][key].format(**kwargs)
+            try:
+                return LANG["en"][key].format(**kwargs)
+            except KeyError:
+                return LANG["en"][key]
         return key
     
-    return LANG[language][key].format(**kwargs)
+    try:
+        return LANG[language][key].format(**kwargs)
+    except KeyError:
+        # Если не удалось форматировать с переданными параметрами, возвращаем без форматирования
+        return LANG[language][key]
 
 def is_rtl_language(language: str) -> bool:
     """Проверка, является ли язык RTL (справа налево)"""

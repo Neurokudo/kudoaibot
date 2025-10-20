@@ -68,23 +68,44 @@ if not OPENAI_API_KEY:
     logging.warning("⚠️ OPENAI_API_KEY не установлен - генерация видео недоступна")
 
 # Настройка логирования
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler('logs/bot.log', encoding='utf-8')
-    ]
-)
-log = logging.getLogger("kudoaibot")
+def setup_logging():
+    """Настройка системы логирования"""
+    # Создаем папку logs если она не существует
+    os.makedirs("logs", exist_ok=True)
+    
+    # Проверяем, нужно ли логировать в файл
+    log_to_file = os.getenv("LOG_TO_FILE", "false").lower() == "true"
+    
+    handlers = [logging.StreamHandler()]
+    if log_to_file:
+        handlers.append(logging.FileHandler('logs/bot.log', encoding='utf-8'))
+    
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+        handlers=handlers
+    )
+    
+    log = logging.getLogger("kudoaibot")
+    log.info("✅ Логирование настроено")
+    return log
 
-# Инициализация бота
-bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-dp = Dispatcher()
+# Инициализируем логирование
+log = setup_logging()
 
 # Переменные для graceful shutdown
 shutdown_event = asyncio.Event()
 runner = None
+
+def setup_bot_and_dispatcher():
+    """Инициализация бота и диспетчера"""
+    log.info("🔧 Инициализация бота и диспетчера...")
+    
+    bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+    dp = Dispatcher()
+    
+    log.info("✅ Бот и диспетчер инициализированы")
+    return bot, dp
 
 # === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
 
@@ -665,7 +686,7 @@ async def setup_bot():
     asyncio.create_task(check_expired_subscriptions_task())
     log.info("✅ Задача проверки подписок запущена")
 
-async def setup_web_app() -> web.Application:
+async def setup_web_app(dp, bot) -> web.Application:
     """Инициализация web приложения"""
     log.info("🔧 Инициализация web приложения...")
     
@@ -677,10 +698,10 @@ async def setup_web_app() -> web.Application:
             data = await request.json()
             update = types.Update(**data)
             await dp.feed_update(bot, update)
-            return web.Response(text="OK")
-        except Exception as e:
-            log.exception(f"Ошибка webhook: {e}")
             return web.Response(text="OK", status=200)
+        except Exception as e:
+            log.exception(f"Webhook error: {e}")
+            return web.Response(text="Error", status=500)
     
     # Health check маршрут для Railway
     app.router.add_get('/', lambda _: web.Response(text="Bot is running ✅"))
@@ -692,49 +713,57 @@ async def setup_web_app() -> web.Application:
 
 async def main():
     """Главная функция"""
-    # Инициализация бота
-    await setup_bot()
-    
-    if TELEGRAM_MODE == "webhook":
-        # Запуск в режиме webhook
-        app = await setup_web_app()
+    try:
+        # Инициализация бота и диспетчера
+        bot, dp = setup_bot_and_dispatcher()
         
-        # Установка webhook
-        webhook_url = f"{PUBLIC_URL}/webhook"
-        await bot.set_webhook(webhook_url)
-        log.info(f"✅ Webhook установлен: {webhook_url}")
+        # Инициализация базы данных
+        await setup_bot()
         
-        runner = web.AppRunner(app)
-        await runner.setup()
-        site = web.TCPSite(runner, '0.0.0.0', PORT)
-        await site.start()
-        
-        log.info(f"✅ Бот запущен в режиме webhook на порту {PORT}")
-        
-        # Настраиваем обработчики сигналов
-        signal.signal(signal.SIGTERM, signal_handler)
-        signal.signal(signal.SIGINT, signal_handler)
-        
-        # Ждем сигнал завершения
-        await shutdown_event.wait()
-        
-        # Graceful shutdown
-        await graceful_shutdown()
-    else:
-        # Запуск в режиме polling
-        await bot.delete_webhook()
-        log.info("✅ Polling mode")
-        
-        # Настраиваем обработчики сигналов
-        signal.signal(signal.SIGTERM, signal_handler)
-        signal.signal(signal.SIGINT, signal_handler)
-        
-        try:
-            await dp.start_polling(bot)
-        except Exception as e:
-            log.error(f"❌ Ошибка polling: {e}")
-        finally:
+        if TELEGRAM_MODE == "webhook":
+            # Запуск в режиме webhook
+            app = await setup_web_app(dp, bot)
+            
+            # Установка webhook
+            webhook_url = f"{PUBLIC_URL}/webhook"
+            await bot.set_webhook(webhook_url)
+            log.info(f"✅ Webhook установлен: {webhook_url}")
+            
+            runner = web.AppRunner(app)
+            await runner.setup()
+            site = web.TCPSite(runner, '0.0.0.0', PORT)
+            await site.start()
+            
+            log.info(f"✅ Бот запущен в режиме webhook на порту {PORT}")
+            
+            # Настраиваем обработчики сигналов
+            signal.signal(signal.SIGTERM, signal_handler)
+            signal.signal(signal.SIGINT, signal_handler)
+            
+            # Ждем сигнал завершения
+            await shutdown_event.wait()
+            
+            # Graceful shutdown
             await graceful_shutdown()
+        else:
+            # Запуск в режиме polling
+            await bot.delete_webhook()
+            log.info("✅ Polling mode")
+            
+            # Настраиваем обработчики сигналов
+            signal.signal(signal.SIGTERM, signal_handler)
+            signal.signal(signal.SIGINT, signal_handler)
+            
+            try:
+                await dp.start_polling(bot)
+            except Exception as e:
+                log.error(f"❌ Ошибка polling: {e}")
+            finally:
+                await graceful_shutdown()
+                
+    except Exception as e:
+        log.exception(f"Startup failed: {e}")
+        raise
 
 if __name__ == "__main__":
     try:

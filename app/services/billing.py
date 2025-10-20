@@ -39,16 +39,24 @@ async def check_access(user_id: int, feature: str) -> Dict[str, Any]:
         # Получаем стоимость функции
         cost = get_feature_cost(feature)
         
-        # Проверяем баланс
-        balance = await balance_manager.get_balance(user_id)
+        # Проверяем баланс (используем dual_balance)
+        balance_info = await get_user_dual_balance(user_id)
+        balance = balance_info['total']
         
         if balance < cost:
             return {
                 "access": False,
                 "reason": "insufficient_funds",
-                "message": f"❌ Недостаточно монеток\nНужно: {cost}\nДоступно: {balance}",
+                "message": (
+                    f"❌ Недостаточно монеток!\n\n"
+                    f"Стоимость: {cost} монет\n"
+                    f"Ваш баланс: {balance} монет\n"
+                    f"├ 🟢 Подписочные: {balance_info['subscription_coins']}\n"
+                    f"└ 🟣 Постоянные: {balance_info['permanent_coins']}"
+                ),
                 "balance": balance,
-                "cost": cost
+                "cost": cost,
+                "balance_details": balance_info
             }
         
         return {
@@ -56,7 +64,8 @@ async def check_access(user_id: int, feature: str) -> Dict[str, Any]:
             "reason": "ok",
             "message": "✅ Доступ разрешен",
             "balance": balance,
-            "cost": cost
+            "cost": cost,
+            "balance_details": balance_info
         }
         
     except Exception as e:
@@ -95,27 +104,35 @@ async def deduct_coins_for_feature(
                 "message": access_check["message"]
             }
         
-        # Списываем монетки
-        try:
-            new_balance = await balance_manager.spend_coins(
-                user_id=user_id,
-                amount=cost,
-                feature=feature
-            )
-            
-            return {
-                "success": True,
-                "coins_spent": cost,
-                "balance_after": new_balance,
-                "message": f"✅ Списано {cost} монеток. Остаток: {new_balance}"
-            }
-            
-        except balance_manager.InsufficientFundsError as e:
+        # Списываем монетки (с приоритетом: подписочные → постоянные)
+        result = await deduct_coins(user_id, cost)
+        
+        if not result['success']:
             return {
                 "success": False,
-                "reason": "insufficient_funds",
-                "message": str(e)
+                "reason": "deduction_failed",
+                "message": result.get('error', 'Ошибка списания монеток')
             }
+        
+        # Логируем детали списания
+        log.info(
+            f"💰 Списано {cost} монет у user {user_id} за {feature}: "
+            f"{result['deducted_from_subscription']}🟢 + "
+            f"{result['deducted_from_permanent']}🟣"
+        )
+        
+        return {
+            "success": True,
+            "coins_spent": cost,
+            "deducted_from_subscription": result['deducted_from_subscription'],
+            "deducted_from_permanent": result['deducted_from_permanent'],
+            "balance_after": result['new_balance']['total'],
+            "balance_details": result['new_balance'],
+            "message": (
+                f"✅ Списано {cost} монет\n"
+                f"Остаток: {result['new_balance']['total']} монет"
+            )
+        }
             
     except Exception as e:
         log.error(f"❌ Ошибка списания монеток {user_id} для {feature}: {e}")

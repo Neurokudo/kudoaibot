@@ -38,8 +38,11 @@ def build_main_menu(lang: str = "ru") -> InlineKeyboardMarkup:
 def build_video_menu(lang: str = "ru") -> InlineKeyboardMarkup:
     """Меню выбора видео модели"""
     keyboard = [
-        [btn(t("btn.sora2", lang), Actions.VIDEO_SORA2)],
-        [btn(t("btn.veo3", lang), Actions.VIDEO_VEO3)],
+        [btn("⚡ Veo 3 Fast (быстрая генерация)", Actions.VIDEO_VEO3_FAST)],
+        [btn("🎥 Veo 3 (реализм)", Actions.VIDEO_VEO3)],
+        [btn("🌟 Sora 2 (стандарт)", Actions.VIDEO_SORA2)],
+        [btn("🔥 Sora 2 Pro (HQ)", Actions.VIDEO_SORA2_PRO)],
+        [btn("🤖 Gemini Video (редактирование)", Actions.VIDEO_GEMINI)],
         [btn(t("btn.back", lang), Actions.HOME)],
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)

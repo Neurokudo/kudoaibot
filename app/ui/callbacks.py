@@ -84,6 +84,9 @@ class Actions:
     # Раздел ВИДЕО
     VIDEO_SORA2 = "video_sora2"
     VIDEO_VEO3 = "video_veo3"
+    VIDEO_VEO3_FAST = "video_veo3_fast"
+    VIDEO_SORA2_PRO = "video_sora2_pro"
+    VIDEO_GEMINI = "video_gemini"
     
     # Режимы генерации видео (используются и для VEO 3, и для SORA 2)
     MODE_HELPER = "mode_helper"      # Умный помощник

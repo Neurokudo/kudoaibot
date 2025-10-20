@@ -6,8 +6,15 @@ CREATE TABLE IF NOT EXISTS users (
     first_name TEXT,
     last_name TEXT,
     language TEXT DEFAULT 'ru',
+    
+    -- НОВАЯ СИСТЕМА: Два типа монеток
+    subscription_coins INT DEFAULT 0,  -- 🟢 Подписочные (сгорают через 30 дней)
+    permanent_coins INT DEFAULT 0,     -- 🟣 Купленные (не сгорают никогда)
+    
+    -- Старые поля для обратной совместимости
     balance INT DEFAULT 0,
     plan TEXT DEFAULT 'free',
+    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_blocked BOOLEAN DEFAULT FALSE

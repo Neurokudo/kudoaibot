@@ -54,10 +54,16 @@ if not os.getenv("YOOKASSA_SECRET_KEY"):
     logging.warning("⚠️ YOOKASSA_SECRET_KEY не установлен - платежи недоступны")
 
 if not os.getenv("OPENAI_API_KEY"):
-    logging.warning("⚠️ OPENAI_API_KEY не установлен - SORA 2 и GPT недоступны")
+    logging.warning("⚠️ OPENAI_API_KEY не установлен")
+    logging.warning("   → Умный помощник: НЕДОСТУПЕН")
+    logging.warning("   → Мемный режим: НЕДОСТУПЕН")
+    logging.warning("   → SORA 2: НЕДОСТУПЕН")
+    logging.warning("   ✅ Ручной режим: доступен")
 
 if not os.getenv("GCP_KEY_JSON_B64"):
-    logging.warning("⚠️ GCP_KEY_JSON_B64 не установлен - VEO 3 недоступен")
+    logging.warning("⚠️ GCP_KEY_JSON_B64 не установлен")
+    logging.warning("   → VEO 3: НЕДОСТУПЕН")
+    logging.warning("   ✅ SORA 2 (если есть OpenAI): доступен")
 
 # Импорт компонентов бота
 from app.core import bot, dp, setup_bot, setup_web_app, graceful_shutdown

@@ -178,8 +178,12 @@ async def process_subscription_payment(
             payment_id=payment_id
         )
         
-        # Добавляем монетки
-        new_balance = await balance_manager.add_coins(
+        # Добавляем ПОДПИСОЧНЫЕ монетки (сгорают через 30 дней)
+        result = await add_subscription_coins(user_id, tariff.coins)
+        new_balance = result['new_balance']['total']
+        
+        # Записываем в старую систему для совместимости
+        await balance_manager.add_coins(
             user_id=user_id,
             amount=tariff.coins,
             transaction_type="subscription",
@@ -239,8 +243,12 @@ async def process_topup_payment(
     try:
         total_coins = coins + bonus_coins
         
-        # Добавляем монетки
-        new_balance = await balance_manager.add_coins(
+        # Добавляем ПОСТОЯННЫЕ монетки (не сгорают)
+        result = await add_permanent_coins(user_id, total_coins)
+        new_balance = result['new_balance']['total']
+        
+        # Записываем в старую систему для совместимости
+        await balance_manager.add_coins(
             user_id=user_id,
             amount=total_coins,
             transaction_type="topup",

@@ -5,6 +5,20 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from .callbacks import Cb, Actions
 from .texts import t
 
+__all__ = [
+    'build_main_menu',
+    'build_video_menu',
+    'build_veo3_modes',
+    'build_sora2_modes',
+    'build_orientation_menu',
+    'build_audio_menu',
+    'build_video_result_menu',
+    'build_confirm_generate',
+    'build_keyboard',
+    'tariff_selection',
+    'btn'
+]
+
 def btn(text: str, action: str, id: str = None, extra: str = None) -> InlineKeyboardButton:
     """Создать кнопку с callback данными"""
     cb = Cb(action=action, id=id, extra=extra)
@@ -82,6 +96,32 @@ def build_confirm_generate(lang: str = "ru", back_action: str = Actions.BACK) ->
         [btn(t("btn.generate", lang), Actions.NAV, "generate")],
         [btn(t("btn.back", lang), back_action)],
     ]
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+def tariff_selection(lang: str = "ru") -> InlineKeyboardMarkup:
+    """Клавиатура выбора тарифов для покупки"""
+    from app.config.pricing import TARIFFS
+    
+    keyboard = []
+    
+    # Добавляем кнопки для каждого тарифа
+    for tariff_key, tariff_info in TARIFFS.items():
+        button_text = f"{tariff_info.icon} {tariff_info.title} — {tariff_info.price_rub} ₽"
+        keyboard.append([
+            InlineKeyboardButton(
+                text=button_text,
+                callback_data=f"buy_tariff_{tariff_key}"
+            )
+        ])
+    
+    # Кнопка "Главное меню"
+    keyboard.append([
+        InlineKeyboardButton(
+            text=t("btn.home", lang),
+            callback_data=Actions.HOME
+        )
+    ])
+    
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 def build_keyboard(screen_id: str, lang: str = "ru") -> InlineKeyboardMarkup:

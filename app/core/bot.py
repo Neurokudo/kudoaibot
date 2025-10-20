@@ -29,6 +29,13 @@ def setup_bot_and_dispatcher():
     log.info("✅ Бот и диспетчер инициализированы")
     return bot, dp
 
-# Инициализируем сразу
-bot, dp = setup_bot_and_dispatcher()
+# Инициализируем лениво - только при первом обращении
+bot = None
+dp = None
+
+def get_bot():
+    global bot, dp
+    if bot is None or dp is None:
+        bot, dp = setup_bot_and_dispatcher()
+    return bot, dp
 

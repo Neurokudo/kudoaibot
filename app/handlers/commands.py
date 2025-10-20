@@ -11,9 +11,20 @@ from app.services import billing
 from app.ui import t
 from app.ui.keyboards import build_main_menu, tariff_selection
 from app.config.pricing import get_full_pricing_text
-from app.core.bot import dp
+from app.core.bot import get_bot
 
 log = logging.getLogger("kudoaibot")
+
+def register_commands():
+    """Регистрация команд"""
+    bot, dp = get_bot()
+    
+    # Регистрируем обработчики
+    dp.message.register(cmd_start, CommandStart())
+    dp.message.register(cmd_help, Command("help"))
+    dp.message.register(cmd_balance, Command("balance"))
+    dp.message.register(cmd_profile, Command("profile"))
+    dp.message.register(cmd_tariffs, Command("tariffs"))
 
 # === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
 
@@ -52,7 +63,6 @@ async def get_user_data(user_id: int) -> dict:
 
 # === ОБРАБОТЧИКИ КОМАНД ===
 
-@dp.message(CommandStart())
 async def cmd_start(message: Message):
     """Обработчик команды /start"""
     await ensure_user_exists(message)
@@ -81,7 +91,6 @@ async def cmd_start(message: Message):
         reply_markup=build_main_menu(user_language)
     )
 
-@dp.message(Command("help"))
 async def cmd_help(message: Message):
     """Обработчик команды /help"""
     await ensure_user_exists(message)
@@ -113,7 +122,6 @@ async def cmd_help(message: Message):
     """
     await message.answer(help_text)
 
-@dp.message(Command("balance"))
 async def cmd_balance(message: Message):
     """Показать баланс монеток"""
     await ensure_user_exists(message)
@@ -146,7 +154,6 @@ async def cmd_balance(message: Message):
     
     await message.answer(balance_text)
 
-@dp.message(Command("profile"))
 async def cmd_profile(message: Message):
     """Показать профиль пользователя"""
     await ensure_user_exists(message)
@@ -173,7 +180,6 @@ async def cmd_profile(message: Message):
     
     await message.answer(profile_text)
 
-@dp.message(Command("tariffs"))
 async def cmd_tariffs(message: Message):
     """Показать тарифы"""
     await ensure_user_exists(message)

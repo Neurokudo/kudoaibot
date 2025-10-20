@@ -8,7 +8,7 @@ from aiohttp import web
 from aiogram import types
 
 from app.db import database, subscriptions
-from .bot import bot, dp
+from .bot import get_bot
 
 log = logging.getLogger("kudoaibot")
 
@@ -49,20 +49,24 @@ async def graceful_shutdown():
     """Graceful shutdown функции"""
     log.info("🛑 Начинаем graceful shutdown...")
     
-    TELEGRAM_MODE = os.getenv("TELEGRAM_MODE", "webhook")
-    
-    if TELEGRAM_MODE == "webhook":
-        try:
-            await bot.delete_webhook()
-            log.info("✅ Webhook удален")
-        except Exception as e:
-            log.error(f"❌ Ошибка удаления webhook: {e}")
-    
     try:
-        await bot.session.close()
-        log.info("✅ Сессия бота закрыта")
+        bot, dp = get_bot()
+        TELEGRAM_MODE = os.getenv("TELEGRAM_MODE", "webhook")
+        
+        if TELEGRAM_MODE == "webhook":
+            try:
+                await bot.delete_webhook()
+                log.info("✅ Webhook удален")
+            except Exception as e:
+                log.error(f"❌ Ошибка удаления webhook: {e}")
+        
+        try:
+            await bot.session.close()
+            log.info("✅ Сессия бота закрыта")
+        except Exception as e:
+            log.error(f"❌ Ошибка закрытия сессии бота: {e}")
     except Exception as e:
-        log.error(f"❌ Ошибка закрытия сессии бота: {e}")
+        log.error(f"❌ Ошибка получения бота для shutdown: {e}")
     
     try:
         await database.close_db()

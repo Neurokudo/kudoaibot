@@ -66,9 +66,9 @@ if not os.getenv("GCP_KEY_JSON_B64"):
     logging.warning("   ✅ SORA 2 (если есть OpenAI): доступен")
 
 # Импорт компонентов бота
-from app.core import bot, dp, setup_bot, setup_web_app, graceful_shutdown
+from app.core import get_bot, setup_bot, setup_web_app, graceful_shutdown
 
-# Регистрация обработчиков (импорт автоматически регистрирует через декораторы)
+# Регистрация обработчиков
 from app.handlers import commands, callbacks, payments, text
 
 log.info("✅ Обработчики зарегистрированы")
@@ -87,8 +87,12 @@ async def main():
         # Инициализация бота
         await setup_bot()
         
+        # Регистрация обработчиков
+        commands.register_commands()
+        
         if TELEGRAM_MODE == "webhook":
             # Режим webhook для production
+            bot, dp = get_bot()
             app = await setup_web_app(dp, bot)
             
             webhook_url = f"{PUBLIC_URL}/webhook"
@@ -115,6 +119,7 @@ async def main():
             
         else:
             # Режим polling для разработки
+            bot, dp = get_bot()
             await bot.delete_webhook()
             log.info("✅ Polling mode активирован")
             

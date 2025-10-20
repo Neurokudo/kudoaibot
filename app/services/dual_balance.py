@@ -26,7 +26,9 @@ async def get_user_dual_balance(user_id: int) -> Dict[str, int]:
             'total': int                # Общий баланс
         }
     """
-    pool = await database.get_pool()
+    pool = database.get_db_pool()
+    if not pool:
+        raise RuntimeError("Database pool not initialized")
     
     async with pool.acquire() as conn:
         result = await conn.fetchrow("""
@@ -66,7 +68,9 @@ async def deduct_coins(user_id: int, coins: int) -> Dict:
             'new_balance': dict
         }
     """
-    pool = await database.get_pool()
+    pool = database.get_db_pool()
+    if not pool:
+        raise RuntimeError("Database pool not initialized")
     
     async with pool.acquire() as conn:
         # Получаем текущие балансы
@@ -138,7 +142,9 @@ async def add_subscription_coins(user_id: int, coins: int) -> Dict:
     Returns:
         {'success': bool, 'new_balance': dict}
     """
-    pool = await database.get_pool()
+    pool = database.get_db_pool()
+    if not pool:
+        raise RuntimeError("Database pool not initialized")
     
     async with pool.acquire() as conn:
         await conn.execute("""
@@ -171,7 +177,9 @@ async def add_permanent_coins(user_id: int, coins: int) -> Dict:
     Returns:
         {'success': bool, 'new_balance': dict}
     """
-    pool = await database.get_pool()
+    pool = database.get_db_pool()
+    if not pool:
+        raise RuntimeError("Database pool not initialized")
     
     async with pool.acquire() as conn:
         await conn.execute("""
@@ -203,7 +211,9 @@ async def reset_subscription_coins(user_id: int) -> Dict:
     Returns:
         {'success': bool, 'coins_removed': int}
     """
-    pool = await database.get_pool()
+    pool = database.get_db_pool()
+    if not pool:
+        raise RuntimeError("Database pool not initialized")
     
     async with pool.acquire() as conn:
         # Получаем текущие подписочные монетки

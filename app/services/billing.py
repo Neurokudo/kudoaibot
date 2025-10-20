@@ -40,6 +40,7 @@ async def check_access(user_id: int, feature: str) -> Dict[str, Any]:
         cost = get_feature_cost(feature)
         
         # Проверяем баланс (используем dual_balance)
+        from app.services.dual_balance import get_user_dual_balance
         balance_info = await get_user_dual_balance(user_id)
         balance = balance_info['total']
         
@@ -105,6 +106,7 @@ async def deduct_coins_for_feature(
             }
         
         # Списываем монетки (с приоритетом: подписочные → постоянные)
+        from app.services.dual_balance import deduct_coins
         result = await deduct_coins(user_id, cost)
         
         if not result['success']:
@@ -179,18 +181,9 @@ async def process_subscription_payment(
         )
         
         # Добавляем ПОДПИСОЧНЫЕ монетки (сгорают через 30 дней)
+        from app.services.dual_balance import add_subscription_coins
         result = await add_subscription_coins(user_id, tariff.coins)
         new_balance = result['new_balance']['total']
-        
-        # Записываем в старую систему для совместимости
-        await balance_manager.add_coins(
-            user_id=user_id,
-            amount=tariff.coins,
-            transaction_type="subscription",
-            feature=f"subscription_{tariff_name}",
-            note=f"Подписка {tariff.title} ({tariff.duration_days} дней)",
-            payment_id=payment_id
-        )
         
         # Обновляем план пользователя
         await users.update_user_plan(user_id, tariff_name)
@@ -244,18 +237,9 @@ async def process_topup_payment(
         total_coins = coins + bonus_coins
         
         # Добавляем ПОСТОЯННЫЕ монетки (не сгорают)
+        from app.services.dual_balance import add_permanent_coins
         result = await add_permanent_coins(user_id, total_coins)
         new_balance = result['new_balance']['total']
-        
-        # Записываем в старую систему для совместимости
-        await balance_manager.add_coins(
-            user_id=user_id,
-            amount=total_coins,
-            transaction_type="topup",
-            feature="topup",
-            note=f"Пополнение: {coins} монеток" + (f" + {bonus_coins} бонус" if bonus_coins > 0 else ""),
-            payment_id=payment_id
-        )
         
         log.info(
             f"✅ Пополнение обработано: user={user_id}, coins={total_coins}, "
@@ -286,11 +270,13 @@ async def get_user_subscription_status(user_id: int) -> Dict[str, Any]:
     """Получить статус подписки пользователя"""
     try:
         status = await subscriptions.check_subscription_status(user_id)
-        balance = await balance_manager.get_balance(user_id)
+        from app.services.dual_balance import get_user_dual_balance
+        balance_info = await get_user_dual_balance(user_id)
         
         return {
             **status,
-            "balance": balance
+            "balance": balance_info['total'],
+            "balance_details": balance_info
         }
     except Exception as e:
         log.error(f"❌ Ошибка получения статуса подписки {user_id}: {e}")

@@ -7,7 +7,7 @@ from aiogram.filters import Command, CommandStart
 from aiogram.types import Message
 
 from app.db import users
-from app.services import balance_manager, billing
+from app.services import billing
 from app.ui import t
 from app.ui.keyboards import build_main_menu, tariff_selection
 from app.config.pricing import get_full_pricing_text
@@ -154,7 +154,8 @@ async def cmd_profile(message: Message):
     
     user = await users.get_user(user_id)
     status = await billing.get_user_subscription_status(user_id)
-    summary = await balance_manager.get_user_summary(user_id, days=30)
+    from app.services.dual_balance import get_user_dual_balance
+    balance_info = await get_user_dual_balance(user_id)
     
     profile_text = f"👤 <b>Ваш профиль</b>\n\n"
     profile_text += f"ID: <code>{user_id}</code>\n"
@@ -169,12 +170,6 @@ async def cmd_profile(message: Message):
         profile_text += f"\n📋 <b>Подписка</b>\n"
         profile_text += f"План: <b>{status['plan']}</b>\n"
         profile_text += f"До: {status['expires_at'].strftime('%d.%m.%Y')}\n"
-    
-    stats = summary['stats']
-    if stats['spend_count'] > 0:
-        profile_text += f"\n📊 <b>За 30 дней</b>\n"
-        profile_text += f"Потрачено: {stats['total_spent']} монеток\n"
-        profile_text += f"Операций: {stats['spend_count']}\n"
     
     await message.answer(profile_text)
 

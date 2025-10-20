@@ -74,26 +74,25 @@ async def sora2_callback(request):
             
             # Возвращаем монетки на баланс
             try:
-                # Получаем пользователя
-                user = await users.get_user(user_id)
-                if user:
-                    current_balance = user.get('videos_left', 0)
-                    # Возвращаем стоимость видео
-                    cost = get_feature_cost("video_8s_audio")
-                    new_balance = current_balance + cost
-                    
-                    # Обновляем баланс
-                    await users.update_user_balance(user_id, new_balance)
-                    
+                # Возвращаем стоимость видео используя dual_balance
+                cost = get_feature_cost("video_8s_audio")
+                from app.services.dual_balance import add_permanent_coins
+                
+                # Возвращаем как постоянные монетки (не сгорают)
+                refund_result = await add_permanent_coins(user_id, cost)
+                
+                if refund_result['success']:
                     # Уведомляем пользователя
                     await bot.send_message(
                         user_id,
                         f"❌ <b>Ошибка генерации видео SORA 2</b>\n\n"
                         f"Причина: {error_message}\n\n"
-                        f"💰 Монетки возвращены на баланс (+{cost})",
+                        f"💰 Монетки возвращены на баланс (+{cost} постоянных монеток)",
                         parse_mode="HTML"
                     )
-                    log.info(f"✅ Refunded {cost} coins to user {user_id}")
+                    log.info(f"✅ Refunded {cost} permanent coins to user {user_id}")
+                else:
+                    log.error(f"❌ Failed to refund coins to user {user_id}")
                     
             except Exception as refund_error:
                 log.error(f"❌ Error refunding coins to user {user_id}: {refund_error}")

@@ -167,3 +167,153 @@ def _poll_and_collect(sess, op_name: str):
 
             return {"videos": out_files}
         time.sleep(5)
+
+async def generate_video_veo3_async(
+    prompt: str,
+    duration: int = 8,
+    aspect_ratio: str = "9:16",
+    with_audio: bool = True
+) -> dict:
+    """Асинхронная версия генерации VEO 3"""
+    import asyncio
+    return await asyncio.to_thread(
+        generate_video_sync,
+        prompt=prompt,
+        duration=duration,
+        aspect_ratio=aspect_ratio,
+        with_audio=with_audio
+    )
+
+async def create_veo3_task(
+    prompt: str,
+    duration: int = 8,
+    aspect_ratio: str = "9:16",
+    with_audio: bool = True,
+    user_id: int = None
+):
+    """
+    Создает асинхронную задачу генерации через VEO 3 (с polling)
+    Возвращает task_id и запускает фоновый polling
+    
+    Args:
+        prompt: Текстовое описание
+        duration: Длительность (6 или 8)
+        aspect_ratio: Ориентация (9:16 или 16:9)
+        with_audio: Генерировать аудио
+        user_id: ID пользователя для отправки результата
+    
+    Returns:
+        (task_id, status): ID задачи и статус
+    """
+    import uuid
+    import asyncio
+    
+    # Генерируем уникальный ID задачи
+    task_id = f"veo3_{uuid.uuid4().hex[:12]}"
+    
+    log.info(f"🎬 Creating VEO 3 task {task_id} for user {user_id}")
+    
+    # Запускаем генерацию в фоне
+    asyncio.create_task(
+        _generate_and_notify_veo3(
+            task_id=task_id,
+            user_id=user_id,
+            prompt=prompt,
+            duration=duration,
+            aspect_ratio=aspect_ratio,
+            with_audio=with_audio
+        )
+    )
+    
+    return task_id, "success"
+
+async def _generate_and_notify_veo3(
+    task_id: str,
+    user_id: int,
+    prompt: str,
+    duration: int,
+    aspect_ratio: str,
+    with_audio: bool
+):
+    """
+    Фоновая задача: генерирует видео и отправляет пользователю
+    """
+    import asyncio
+    from aiogram import Bot
+    import os
+    
+    bot_token = os.getenv("BOT_TOKEN")
+    if not bot_token:
+        log.error("BOT_TOKEN not found for VEO 3 notification")
+        return
+    
+    bot = Bot(token=bot_token)
+    
+    try:
+        log.info(f"🎬 Starting VEO 3 generation for task {task_id}")
+        
+        # Генерируем видео (синхронная функция в отдельном потоке)
+        result = await asyncio.to_thread(
+            generate_video_sync,
+            prompt=prompt,
+            duration=duration,
+            aspect_ratio=aspect_ratio,
+            with_audio=with_audio
+        )
+        
+        videos = result.get('videos', [])
+        if not videos:
+            log.error(f"❌ VEO 3 task {task_id}: No videos generated")
+            await bot.send_message(
+                user_id,
+                "❌ Ошибка генерации видео VEO 3. Монетки возвращены на баланс.",
+                parse_mode="HTML"
+            )
+            return
+        
+        video_file = videos[0].get('file_path')
+        if video_file and os.path.exists(video_file):
+            log.info(f"✅ VEO 3 task {task_id}: Sending video to user {user_id}")
+            
+            # Отправляем видео
+            from aiogram.types import FSInputFile
+            video = FSInputFile(video_file)
+            
+            await bot.send_video(
+                user_id,
+                video,
+                caption="✅ Видео VEO 3 готово!",
+                parse_mode="HTML"
+            )
+            
+            log.info(f"✅ VEO 3 task {task_id}: Video sent successfully")
+            
+            # Удаляем временные файлы
+            try:
+                os.remove(video_file)
+                original_file = video_file.replace("_fixed.mp4", ".mp4")
+                if os.path.exists(original_file) and original_file != video_file:
+                    os.remove(original_file)
+            except Exception as e:
+                log.warning(f"Failed to remove temp files: {e}")
+        else:
+            log.error(f"❌ VEO 3 task {task_id}: Video file not found")
+            await bot.send_message(
+                user_id,
+                "❌ Ошибка: файл видео не найден",
+                parse_mode="HTML"
+            )
+    
+    except Exception as e:
+        log.error(f"❌ VEO 3 task {task_id} failed: {e}", exc_info=True)
+        try:
+            await bot.send_message(
+                user_id,
+                f"❌ Ошибка генерации видео VEO 3: {str(e)}",
+                parse_mode="HTML"
+            )
+        except:
+            log.error(f"Failed to send error message to user {user_id}")
+    
+    finally:
+        await bot.session.close()

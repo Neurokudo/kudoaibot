@@ -1,6 +1,7 @@
 """
 KudoAiBot - AI-powered Telegram bot
-Объединяет Veo 3, Virtual Try-On и умную систему монеток
+Разделы: ВИДЕО (SORA 2, VEO 3), ФОТО, ПРИМЕРОЧНАЯ
+С умным помощником, мемным режимом и ручным режимом
 """
 import os
 import logging
@@ -22,7 +23,6 @@ from app.services.yookassa_service import (
     create_topup_payment,
     get_payment_status
 )
-from app.services.clients import generate_video_sync, virtual_tryon
 from app.config.pricing import (
     TARIFFS,
     TOPUP_PACKS,
@@ -30,11 +30,27 @@ from app.config.pricing import (
     format_tariffs_text,
     get_feature_cost
 )
-from translations import get_text
-from utils.keyboards import (
-    main_menu,
-    language_selection,
+from app.ui import parse_cb, Actions, t
+from app.ui.keyboards import (
+    build_main_menu,
+    build_video_menu,
+    build_veo3_modes,
+    build_sora2_modes,
     tariff_selection
+)
+from app.handlers.states import get_user_state, is_waiting_for_input
+from app.handlers.video_handlers import (
+    handle_video_menu,
+    handle_veo3_menu,
+    handle_sora2_menu,
+    handle_mode_helper,
+    handle_mode_manual,
+    handle_mode_meme,
+    handle_text_input,
+    handle_orientation_choice,
+    handle_audio_choice,
+    handle_video_regenerate,
+    handle_video_to_helper
 )
 
 # === НАСТРОЙКИ ===
@@ -70,10 +86,8 @@ if not OPENAI_API_KEY:
 # Настройка логирования
 def setup_logging():
     """Настройка системы логирования"""
-    # Создаем папку logs если она не существует
     os.makedirs("logs", exist_ok=True)
     
-    # Проверяем, нужно ли логировать в файл
     log_to_file = os.getenv("LOG_TO_FILE", "false").lower() == "true"
     
     handlers = [logging.StreamHandler()]
@@ -90,7 +104,6 @@ def setup_logging():
     log.info("✅ Логирование настроено")
     return log
 
-# Инициализируем логирование
 log = setup_logging()
 
 # Переменные для graceful shutdown
@@ -112,7 +125,6 @@ def setup_bot_and_dispatcher():
     log.info("✅ Бот и диспетчер инициализированы")
     return bot, dp
 
-# Инициализируем бота и диспетчера сразу
 bot, dp = setup_bot_and_dispatcher()
 
 # === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
@@ -142,7 +154,6 @@ async def get_user_data(user_id: int) -> dict:
     if not user:
         return {'subscription_type': 'Без подписки', 'videos_left': 0}
     
-    # Получаем статус подписки
     status = await billing.get_user_subscription_status(user_id)
     
     return {
@@ -159,20 +170,19 @@ async def cmd_start(message: Message):
     await ensure_user_exists(message)
     user_language = await get_user_language(message.from_user.id)
     
-    # Получаем данные пользователя для приветствия
     user_id = message.from_user.id
     user_data = await get_user_data(user_id)
     name = message.from_user.first_name or "друг"
-    plan = user_data.get('subscription_type', 'Без подписки')
-    videos_left = user_data.get('videos_left', 0)
     
-    welcome_text = get_text(user_language, "welcome", 
-                           name=name, 
-                           plan=plan, 
-                           videos_left=videos_left)
+    welcome_text = f"👋 Привет, {name}!\n\n"
+    welcome_text += "🤖 <b>KudoAiBot</b> - твой AI помощник\n\n"
+    welcome_text += "📊 Твой баланс: {videos_left} монеток\n".format(**user_data)
+    welcome_text += "💼 Тариф: {subscription_type}\n\n".format(**user_data)
+    welcome_text += "Выбери раздел:"
+    
     await message.answer(
         welcome_text,
-        reply_markup=main_menu(user_language)
+        reply_markup=build_main_menu(user_language)
     )
 
 @dp.message(Command("help"))
@@ -181,203 +191,183 @@ async def cmd_help(message: Message):
     await ensure_user_exists(message)
     user_language = await get_user_language(message.from_user.id)
     
-    help_text = get_text(user_language, "help_text")
+    help_text = """
+🤖 <b>KudoAiBot - Инструкция</b>
+
+<b>РАЗДЕЛЫ:</b>
+
+🎬 <b>ВИДЕО</b>
+• SORA 2 - генерация видео через OpenAI SORA 2
+• VEO 3 - генерация видео через Google VEO 3
+
+<b>Режимы генерации:</b>
+🤖 Умный помощник - опишите идею, GPT создаст промпт
+✋ Ручной режим - введите готовый промпт
+😄 Мемный режим - быстрые короткие мемы
+
+📸 <b>ФОТО</b> (скоро)
+• Различные функции для работы с фото
+
+👗 <b>ПРИМЕРОЧНАЯ</b>
+• Виртуальная примерочная одежды
+
+💰 <b>Монетки</b>
+• Генерация видео стоит монетки
+• Купить можно в разделе Профиль
+    """
     await message.answer(help_text)
 
 # === ОБРАБОТЧИКИ CALLBACK КНОПОК ===
 
-@dp.callback_query(F.data == "menu_create_video")
-async def callback_menu_create_video(callback: CallbackQuery):
-    """Обработчик кнопки 'Создать видео'"""
+@dp.callback_query(F.data == Actions.HOME)
+async def callback_home(callback: CallbackQuery):
+    """Главное меню"""
     await callback.answer()
     await ensure_user_exists(callback.message)
     user_language = await get_user_language(callback.from_user.id)
     
-    # Проверяем подписку
     user_id = callback.from_user.id
     user_data = await get_user_data(user_id)
-    videos_left = user_data.get('videos_left', 0)
+    name = callback.from_user.first_name or "друг"
     
-    if videos_left <= 0:
-        no_videos_text = get_text(user_language, "no_videos_left")
-        await callback.message.edit_text(
-            no_videos_text,
-            reply_markup=tariff_selection(user_language)
-        )
-        return
+    welcome_text = f"👋 {name}\n\n"
+    welcome_text += "💰 Баланс: {videos_left} монеток\n".format(**user_data)
+    welcome_text += "📊 Тариф: {subscription_type}\n\n".format(**user_data)
+    welcome_text += "Выбери раздел:"
     
-    # Показываем меню выбора ориентации
-    orientation_text = get_text(user_language, "choose_orientation")
-    from utils.keyboards import orientation_menu
     await callback.message.edit_text(
-        orientation_text,
-        reply_markup=orientation_menu(user_language)
+        welcome_text,
+        reply_markup=build_main_menu(user_language)
     )
 
-@dp.callback_query(F.data == "menu_examples")
-async def callback_menu_examples(callback: CallbackQuery):
-    """Обработчик кнопки 'Примеры'"""
+@dp.callback_query(F.data == Actions.MENU_VIDEO)
+async def callback_video(callback: CallbackQuery):
+    """Раздел ВИДЕО"""
     await callback.answer()
-    await ensure_user_exists(callback.message)
-    user_language = await get_user_language(callback.from_user.id)
-    
-    examples_text = get_text(user_language, "examples")
-    from utils.keyboards import video_ready_keyboard
+    await handle_video_menu(callback)
+
+@dp.callback_query(F.data == Actions.VIDEO_VEO3)
+async def callback_veo3(callback: CallbackQuery):
+    """VEO 3 меню"""
+    await callback.answer()
+    await handle_veo3_menu(callback)
+
+@dp.callback_query(F.data == Actions.VIDEO_SORA2)
+async def callback_sora2(callback: CallbackQuery):
+    """SORA 2 меню"""
+    await callback.answer()
+    await handle_sora2_menu(callback)
+
+@dp.callback_query(F.data == Actions.MODE_HELPER)
+async def callback_mode_helper(callback: CallbackQuery):
+    """Режим умного помощника"""
+    await callback.answer()
+    await handle_mode_helper(callback)
+
+@dp.callback_query(F.data == Actions.MODE_MANUAL)
+async def callback_mode_manual(callback: CallbackQuery):
+    """Ручной режим"""
+    await callback.answer()
+    await handle_mode_manual(callback)
+
+@dp.callback_query(F.data == Actions.MODE_MEME)
+async def callback_mode_meme(callback: CallbackQuery):
+    """Мемный режим"""
+    await callback.answer()
+    await handle_mode_meme(callback)
+
+@dp.callback_query(F.data == Actions.ORIENTATION_PORTRAIT)
+async def callback_orientation_portrait(callback: CallbackQuery):
+    """Портретная ориентация"""
+    await callback.answer()
+    await handle_orientation_choice(callback)
+
+@dp.callback_query(F.data == Actions.ORIENTATION_LANDSCAPE)
+async def callback_orientation_landscape(callback: CallbackQuery):
+    """Ландшафтная ориентация"""
+    await callback.answer()
+    await handle_orientation_choice(callback)
+
+@dp.callback_query(F.data == Actions.AUDIO_YES)
+async def callback_audio_yes(callback: CallbackQuery):
+    """Со звуком"""
+    await callback.answer()
+    await handle_audio_choice(callback)
+
+@dp.callback_query(F.data == Actions.AUDIO_NO)
+async def callback_audio_no(callback: CallbackQuery):
+    """Без звука"""
+    await callback.answer()
+    await handle_audio_choice(callback)
+
+@dp.callback_query(F.data == Actions.VIDEO_REGENERATE)
+async def callback_video_regenerate(callback: CallbackQuery):
+    """Повторная генерация"""
+    await callback.answer()
+    await handle_video_regenerate(callback)
+
+@dp.callback_query(F.data == Actions.VIDEO_TO_HELPER)
+async def callback_video_to_helper(callback: CallbackQuery):
+    """Переход к помощнику"""
+    await callback.answer()
+    await handle_video_to_helper(callback)
+
+@dp.callback_query(F.data == Actions.MENU_PHOTO)
+async def callback_photo(callback: CallbackQuery):
+    """Раздел ФОТО"""
+    await callback.answer()
     await callback.message.edit_text(
-        examples_text,
-        reply_markup=video_ready_keyboard(user_language)
+        t("menu.photo"),
+        reply_markup=build_main_menu()
     )
 
-@dp.callback_query(F.data == "menu_profile")
-async def callback_menu_profile(callback: CallbackQuery):
-    """Обработчик кнопки 'Профиль'"""
+@dp.callback_query(F.data == Actions.MENU_TRYON)
+async def callback_tryon(callback: CallbackQuery):
+    """Раздел ПРИМЕРОЧНАЯ"""
+    await callback.answer()
+    await callback.message.edit_text(
+        t("menu.tryon"),
+        reply_markup=build_main_menu()
+    )
+
+@dp.callback_query(F.data == Actions.MENU_PROFILE)
+async def callback_profile(callback: CallbackQuery):
+    """Профиль"""
     await callback.answer()
     await ensure_user_exists(callback.message)
     user_id = callback.from_user.id
     user_language = await get_user_language(user_id)
     
-    # Получаем данные пользователя
     user_data = await get_user_data(user_id)
     name = callback.from_user.first_name or "Пользователь"
-    plan = user_data.get('subscription_type', 'Без подписки')
-    videos_left = user_data.get('videos_left', 0)
     
-    # Получаем дату регистрации
     user = await users.get_user(user_id)
     reg_date = user.get('created_at', 'Неизвестно') if user else 'Неизвестно'
     
-    profile_text = get_text(user_language, "profile",
-                           name=name,
-                           plan=plan,
-                           videos_left=videos_left,
-                           date=reg_date)
+    profile_text = f"👤 <b>Профиль</b>\n\n"
+    profile_text += f"Имя: {name}\n"
+    profile_text += f"💰 Баланс: {user_data['videos_left']} монеток\n"
+    profile_text += f"📊 Тариф: {user_data['subscription_type']}\n"
+    profile_text += f"📅 Регистрация: {reg_date}\n"
     
-    from utils.keyboards import tariff_selection
     await callback.message.edit_text(
         profile_text,
         reply_markup=tariff_selection(user_language)
     )
 
-@dp.callback_query(F.data == "menu_help")
-async def callback_menu_help(callback: CallbackQuery):
-    """Обработчик кнопки 'Помощь'"""
-    await callback.answer()
-    await ensure_user_exists(callback.message)
-    user_language = await get_user_language(callback.from_user.id)
-    
-    help_text = get_text(user_language, "help_text")
-    from utils.keyboards import help_keyboard
-    await callback.message.edit_text(
-        help_text,
-        reply_markup=help_keyboard(user_language)
-    )
+# === ОБРАБОТКА ТЕКСТОВЫХ СООБЩЕНИЙ ===
 
-@dp.callback_query(F.data == "menu_language")
-async def callback_menu_language(callback: CallbackQuery):
-    """Обработчик кнопки 'Язык'"""
-    await callback.answer()
-    await ensure_user_exists(callback.message)
-    user_language = await get_user_language(callback.from_user.id)
-    
-    language_text = get_text(user_language, "choose_language")
-    from utils.keyboards import language_selection
-    await callback.message.edit_text(
-        language_text,
-        reply_markup=language_selection()
-    )
-
-@dp.callback_query(F.data == "main_menu")
-async def callback_main_menu(callback: CallbackQuery):
-    """Обработчик кнопки 'Главное меню'"""
-    await callback.answer()
-    await ensure_user_exists(callback.message)
-    user_language = await get_user_language(callback.from_user.id)
-    
-    # Получаем данные пользователя для приветствия
-    user_id = callback.from_user.id
-    user_data = await get_user_data(user_id)
-    name = callback.from_user.first_name or "друг"
-    plan = user_data.get('subscription_type', 'Без подписки')
-    videos_left = user_data.get('videos_left', 0)
-    
-    welcome_text = get_text(user_language, "welcome", 
-                           name=name, 
-                           plan=plan, 
-                           videos_left=videos_left)
-    
-    await callback.message.edit_text(
-        welcome_text,
-        reply_markup=main_menu(user_language)
-    )
-
-@dp.message(Command("balance"))
-async def cmd_balance(message: Message):
-    """Показать баланс монеток"""
-    await ensure_user_exists(message)
+@dp.message(F.text & ~F.text.startswith("/"))
+async def handle_text_message(message: Message):
+    """Обработка текстовых сообщений"""
     user_id = message.from_user.id
-    user_language = await get_user_language(user_id)
     
-    # Получаем статус подписки и баланс
-    status = await billing.get_user_subscription_status(user_id)
-    balance = status['balance']
-    
-    balance_text = f"💰 <b>Ваш баланс</b>\n\n"
-    balance_text += f"Монеток: <b>{balance}</b>\n\n"
-    
-    if status['has_active']:
-        balance_text += f"📋 Подписка: <b>{status['plan']}</b>\n"
-        balance_text += f"Действует до: {status['expires_at'].strftime('%d.%m.%Y')}\n"
-        balance_text += f"Осталось дней: {status['days_left']}\n"
+    # Проверяем, ждёт ли бот ввода от этого пользователя
+    if is_waiting_for_input(user_id):
+        await handle_text_input(message)
     else:
-        balance_text += f"📋 Подписка: <b>отсутствует</b>\n"
-    
-    await message.answer(balance_text)
-
-@dp.message(Command("profile"))
-async def cmd_profile(message: Message):
-    """Показать профиль пользователя"""
-    await ensure_user_exists(message)
-    user_id = message.from_user.id
-    
-    # Получаем данные пользователя
-    user = await users.get_user(user_id)
-    status = await billing.get_user_subscription_status(user_id)
-    summary = await balance_manager.get_user_summary(user_id, days=30)
-    
-    profile_text = f"👤 <b>Ваш профиль</b>\n\n"
-    profile_text += f"ID: <code>{user_id}</code>\n"
-    profile_text += f"Имя: {user['first_name']}\n"
-    if user['username']:
-        profile_text += f"Username: @{user['username']}\n"
-    
-    profile_text += f"\n💰 <b>Монетки</b>\n"
-    profile_text += f"Баланс: <b>{status['balance']}</b>\n"
-    
-    if status['has_active']:
-        profile_text += f"\n📋 <b>Подписка</b>\n"
-        profile_text += f"План: <b>{status['plan']}</b>\n"
-        profile_text += f"До: {status['expires_at'].strftime('%d.%m.%Y')}\n"
-    
-    # Статистика за 30 дней
-    stats = summary['stats']
-    if stats['spend_count'] > 0:
-        profile_text += f"\n📊 <b>За 30 дней</b>\n"
-        profile_text += f"Потрачено: {stats['total_spent']} монеток\n"
-        profile_text += f"Операций: {stats['spend_count']}\n"
-    
-    await message.answer(profile_text)
-
-@dp.message(Command("tariffs"))
-async def cmd_tariffs(message: Message):
-    """Показать тарифы"""
-    await ensure_user_exists(message)
-    user_language = await get_user_language(message.from_user.id)
-    
-    tariffs_text = get_full_pricing_text()
-    await message.answer(
-        tariffs_text,
-        reply_markup=tariff_selection(user_language)
-    )
+        # Если не ждём ввода, показываем меню
+        await cmd_start(message)
 
 # === ОБРАБОТЧИКИ ПОКУПКИ ТАРИФОВ ===
 
@@ -396,7 +386,6 @@ async def handle_buy_tariff(callback: CallbackQuery):
         await callback.message.edit_text("❌ Тариф не найден")
         return
     
-    # Создаем платеж
     payment_result = create_subscription_payment(
         user_id=user_id,
         tariff_name=tariff_name,
@@ -409,7 +398,6 @@ async def handle_buy_tariff(callback: CallbackQuery):
         )
         return
     
-    # Отправляем ссылку на оплату
     payment_text = (
         f"{tariff.icon} <b>{tariff.title}</b>\n\n"
         f"💰 Цена: {tariff.price_rub} ₽\n"
@@ -420,7 +408,7 @@ async def handle_buy_tariff(callback: CallbackQuery):
     
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
         [types.InlineKeyboardButton(text="💳 Оплатить", url=payment_result['confirmation_url'])],
-        [types.InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu")]
+        [types.InlineKeyboardButton(text="🏠 Главное меню", callback_data=Actions.HOME)]
     ])
     
     await callback.message.edit_text(payment_text, reply_markup=keyboard)
@@ -440,7 +428,6 @@ async def handle_buy_topup(callback: CallbackQuery):
         await callback.message.edit_text("❌ Пакет не найден")
         return
     
-    # Создаем платеж
     payment_result = create_topup_payment(
         user_id=user_id,
         coins=pack.coins,
@@ -467,10 +454,111 @@ async def handle_buy_topup(callback: CallbackQuery):
     
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
         [types.InlineKeyboardButton(text="💳 Оплатить", url=payment_result['confirmation_url'])],
-        [types.InlineKeyboardButton(text="🏠 Главное меню", callback_data="main_menu")]
+        [types.InlineKeyboardButton(text="🏠 Главное меню", callback_data=Actions.HOME)]
     ])
     
     await callback.message.edit_text(payment_text, reply_markup=keyboard)
+
+# === WEBHOOK ДЛЯ SORA 2 ===
+
+async def sora2_callback(request):
+    """Обработчик callback от OpenAI SORA 2"""
+    try:
+        data = await request.json()
+        log.info(f"🎬 SORA 2 callback received: {data}")
+        
+        # Получаем данные о видео
+        video_id = data.get("id")
+        status = data.get("status")
+        metadata = data.get("metadata", {})
+        
+        # Извлекаем user_id
+        from app.services.clients.sora_client import extract_user_from_metadata
+        user_id = extract_user_from_metadata(metadata)
+        
+        if status == "completed" and user_id:
+            # Получаем URL видео
+            video_data = data.get("output", {})
+            video_url = video_data.get("url")
+            
+            if video_url:
+                # Получаем язык пользователя
+                user = await users.get_user(user_id)
+                user_language = user.get('language', 'ru') if user else 'ru'
+                
+                # Отправляем видео пользователю
+                try:
+                    from app.ui.keyboards import build_video_result_menu
+                    
+                    await bot.send_video(
+                        user_id,
+                        video=video_url,
+                        caption=t("video.success", cost=get_feature_cost("video_8s_audio")),
+                        reply_markup=build_video_result_menu(user_language),
+                        parse_mode="HTML"
+                    )
+                    log.info(f"✅ SORA 2 video sent to user {user_id}")
+                    
+                except Exception as video_error:
+                    log.error(f"❌ Failed to send SORA 2 video to user {user_id}: {video_error}")
+                    
+                    # Fallback - отправляем ссылку
+                    try:
+                        await bot.send_message(
+                            user_id,
+                            f"✨ <b>Видео готово!</b>\n\n"
+                            f"📹 <a href='{video_url}'>Смотреть видео</a>\n\n"
+                            f"💰 Списано: {get_feature_cost('video_8s_audio')} монеток",
+                            parse_mode="HTML"
+                        )
+                    except Exception as fallback_error:
+                        log.error(f"❌ Fallback also failed: {fallback_error}")
+            else:
+                log.error(f"❌ No video URL in SORA 2 callback for user {user_id}")
+        
+        elif status == "failed" and user_id:
+            # Обработка ошибки - возвращаем монетки
+            error_data = data.get("error", {})
+            error_message = error_data.get("message", "Unknown error")
+            
+            log.info(f"❌ SORA 2 generation failed for user {user_id}: {error_message}")
+            
+            # Возвращаем монетки на баланс
+            try:
+                # Получаем пользователя
+                user = await users.get_user(user_id)
+                if user:
+                    current_balance = user.get('videos_left', 0)
+                    # Возвращаем стоимость видео
+                    cost = get_feature_cost("video_8s_audio")
+                    new_balance = current_balance + cost
+                    
+                    # Обновляем баланс
+                    await users.update_user_balance(user_id, new_balance)
+                    
+                    # Уведомляем пользователя
+                    await bot.send_message(
+                        user_id,
+                        f"❌ <b>Ошибка генерации видео SORA 2</b>\n\n"
+                        f"Причина: {error_message}\n\n"
+                        f"💰 Монетки возвращены на баланс (+{cost})",
+                        parse_mode="HTML"
+                    )
+                    log.info(f"✅ Refunded {cost} coins to user {user_id}")
+                    
+            except Exception as refund_error:
+                log.error(f"❌ Error refunding coins to user {user_id}: {refund_error}")
+        
+        else:
+            log.info(f"ℹ️ SORA 2 callback status: {status} (user_id: {user_id})")
+        
+        return web.Response(text="OK")
+        
+    except Exception as e:
+        log.error(f"❌ Error in SORA 2 callback: {e}")
+        import traceback
+        log.error(f"❌ Traceback: {traceback.format_exc()}")
+        return web.Response(text="Error", status=500)
 
 # === WEBHOOK ДЛЯ YOOKASSA ===
 
@@ -492,7 +580,6 @@ async def yookassa_webhook(request):
             plan_or_coins = metadata.get('plan_or_coins')
             
             if payment_type == 'subscription':
-                # Обрабатываем подписку
                 result = await billing.process_subscription_payment(
                     user_id=user_id,
                     tariff_name=plan_or_coins,
@@ -500,7 +587,6 @@ async def yookassa_webhook(request):
                 )
                 
                 if result['success']:
-                    # Уведомляем пользователя
                     try:
                         await bot.send_message(
                             user_id,
@@ -510,7 +596,6 @@ async def yookassa_webhook(request):
                         log.error(f"Ошибка отправки уведомления: {e}")
                 
             elif payment_type == 'topup':
-                # Обрабатываем пополнение
                 from app.config.pricing import get_topup_pack
                 coins = int(plan_or_coins)
                 pack = get_topup_pack(coins)
@@ -525,7 +610,6 @@ async def yookassa_webhook(request):
                     )
                     
                     if result['success']:
-                        # Уведомляем пользователя
                         try:
                             await bot.send_message(
                                 user_id,
@@ -540,90 +624,72 @@ async def yookassa_webhook(request):
         log.error(f"❌ Ошибка обработки webhook: {e}")
         return web.Response(status=500)
 
-# === ОБРАБОТЧИКИ VEO 3 ГЕНЕРАЦИИ ===
+# === КОМАНДЫ БАЛАНСА И ПРОФИЛЯ ===
 
-@dp.message(Command("generate"))
-async def cmd_generate(message: Message):
-    """Начать генерацию видео"""
+@dp.message(Command("balance"))
+async def cmd_balance(message: Message):
+    """Показать баланс монеток"""
+    await ensure_user_exists(message)
+    user_id = message.from_user.id
+    user_language = await get_user_language(user_id)
+    
+    status = await billing.get_user_subscription_status(user_id)
+    balance = status['balance']
+    
+    balance_text = f"💰 <b>Ваш баланс</b>\n\n"
+    balance_text += f"Монеток: <b>{balance}</b>\n\n"
+    
+    if status['has_active']:
+        balance_text += f"📋 Подписка: <b>{status['plan']}</b>\n"
+        balance_text += f"Действует до: {status['expires_at'].strftime('%d.%m.%Y')}\n"
+        balance_text += f"Осталось дней: {status['days_left']}\n"
+    else:
+        balance_text += f"📋 Подписка: <b>отсутствует</b>\n"
+    
+    await message.answer(balance_text)
+
+@dp.message(Command("profile"))
+async def cmd_profile(message: Message):
+    """Показать профиль пользователя"""
+    await ensure_user_exists(message)
+    user_id = message.from_user.id
+    
+    user = await users.get_user(user_id)
+    status = await billing.get_user_subscription_status(user_id)
+    summary = await balance_manager.get_user_summary(user_id, days=30)
+    
+    profile_text = f"👤 <b>Ваш профиль</b>\n\n"
+    profile_text += f"ID: <code>{user_id}</code>\n"
+    profile_text += f"Имя: {user['first_name']}\n"
+    if user['username']:
+        profile_text += f"Username: @{user['username']}\n"
+    
+    profile_text += f"\n💰 <b>Монетки</b>\n"
+    profile_text += f"Баланс: <b>{status['balance']}</b>\n"
+    
+    if status['has_active']:
+        profile_text += f"\n📋 <b>Подписка</b>\n"
+        profile_text += f"План: <b>{status['plan']}</b>\n"
+        profile_text += f"До: {status['expires_at'].strftime('%d.%m.%Y')}\n"
+    
+    stats = summary['stats']
+    if stats['spend_count'] > 0:
+        profile_text += f"\n📊 <b>За 30 дней</b>\n"
+        profile_text += f"Потрачено: {stats['total_spent']} монеток\n"
+        profile_text += f"Операций: {stats['spend_count']}\n"
+    
+    await message.answer(profile_text)
+
+@dp.message(Command("tariffs"))
+async def cmd_tariffs(message: Message):
+    """Показать тарифы"""
     await ensure_user_exists(message)
     user_language = await get_user_language(message.from_user.id)
     
+    tariffs_text = get_full_pricing_text()
     await message.answer(
-        "🎬 Отправьте текстовое описание видео, которое хотите создать:"
-    )
-
-@dp.message(F.text & ~F.text.startswith("/"))
-async def handle_text_prompt(message: Message):
-    """Обработка текстового промпта для генерации"""
-    user_id = message.from_user.id
-    prompt = message.text
-    
-    # Проверяем доступ
-    access = await billing.check_access(user_id, "video_8s_mute")
-    if not access['access']:
-        await message.answer(access['message'])
-        return
-    
-    # Уведомляем о начале генерации
-    status_msg = await message.answer(
-        "⏳ Начинаю генерацию видео...\n"
-        "Это может занять 1-2 минуты."
-    )
-    
-    try:
-        # Списываем монетки
-        deduct_result = await billing.deduct_coins_for_feature(user_id, "video_8s_mute")
-        if not deduct_result['success']:
-            await status_msg.edit_text(deduct_result['message'])
-            return
-        
-        # Генерируем видео
-        result = await asyncio.to_thread(
-            generate_video_sync,
-            prompt=prompt,
-            duration=8,
-            aspect_ratio="9:16",
-            with_audio=False
-        )
-        
-        videos = result.get('videos', [])
-        if not videos:
-            await status_msg.edit_text("❌ Не удалось сгенерировать видео")
-            return
-        
-        video_file = videos[0].get('file_path')
-        if video_file:
-            # Отправляем видео
-            with open(video_file, 'rb') as video:
-                await message.answer_video(
-                    video,
-                    caption=f"✅ Видео готово!\n\nПромпт: {prompt[:100]}..."
-                )
-            
-            # Удаляем статус сообщение
-            await status_msg.delete()
-            
-            # Удаляем временный файл
-            os.remove(video_file)
-        else:
-            await status_msg.edit_text("❌ Ошибка при получении видео")
-    
-    except Exception as e:
-        log.error(f"Ошибка генерации видео: {e}")
-        await status_msg.edit_text(f"❌ Ошибка: {str(e)}")
-
-# === ГЛАВНОЕ МЕНЮ ===
-
-@dp.callback_query(F.data == "main_menu")
-async def handle_main_menu(callback: CallbackQuery):
-    """Главное меню"""
-    await callback.answer()
-    user_language = await get_user_language(callback.from_user.id)
-    
-    welcome_text = get_text(user_language, "welcome")
-    await callback.message.edit_text(
-        welcome_text,
-        reply_markup=main_menu(user_language)
+        tariffs_text,
+        reply_markup=tariff_selection(user_language)
     )
 
 # === ЗАПУСК БОТА ===
@@ -654,7 +720,6 @@ async def graceful_shutdown():
     """Graceful shutdown функции"""
     log.info("🛑 Начинаем graceful shutdown...")
     
-    # Останавливаем webhook
     if TELEGRAM_MODE == "webhook":
         try:
             await bot.delete_webhook()
@@ -662,14 +727,12 @@ async def graceful_shutdown():
         except Exception as e:
             log.error(f"❌ Ошибка удаления webhook: {e}")
     
-    # Закрываем соединение с ботом
     try:
         await bot.session.close()
         log.info("✅ Сессия бота закрыта")
     except Exception as e:
         log.error(f"❌ Ошибка закрытия сессии бота: {e}")
     
-    # Закрываем соединение с БД
     try:
         await database.close_db()
         log.info("✅ Соединение с БД закрыто")
@@ -682,7 +745,6 @@ async def setup_bot():
     """Инициализация бота и обработчиков"""
     log.info("🔧 Инициализация бота...")
     
-    # Инициализация базы данных
     db_ok = await database.init_db()
     if not db_ok:
         log.error("❌ Не удалось инициализировать БД")
@@ -691,7 +753,6 @@ async def setup_bot():
     log.info("✅ Подключение к базе данных установлено")
     log.info("✅ Таблицы базы данных созданы/обновлены")
     
-    # Запуск задачи проверки истекших подписок
     asyncio.create_task(check_expired_subscriptions_task())
     log.info("✅ Задача проверки подписок запущена")
 
@@ -712,10 +773,10 @@ async def setup_web_app(dp, bot) -> web.Application:
             log.exception(f"Webhook error: {e}")
             return web.Response(text="Error", status=500)
     
-    # Health check маршрут для Railway
     app.router.add_get('/', lambda _: web.Response(text="Bot is running ✅"))
     app.router.add_post('/webhook', telegram_webhook)
     app.router.add_post('/yookassa_webhook', yookassa_webhook)
+    app.router.add_post('/sora_callback', sora2_callback)  # SORA 2 callback
     
     log.info("✅ Web приложение настроено")
     return app
@@ -723,14 +784,11 @@ async def setup_web_app(dp, bot) -> web.Application:
 async def main():
     """Главная функция"""
     try:
-        # Инициализация базы данных
         await setup_bot()
         
         if TELEGRAM_MODE == "webhook":
-            # Запуск в режиме webhook
             app = await setup_web_app(dp, bot)
             
-            # Установка webhook
             webhook_url = f"{PUBLIC_URL}/webhook"
             await bot.set_webhook(webhook_url)
             log.info(f"✅ Webhook установлен: {webhook_url}")
@@ -742,21 +800,16 @@ async def main():
             
             log.info(f"✅ Бот запущен в режиме webhook на порту {PORT}")
             
-            # Настраиваем обработчики сигналов
             signal.signal(signal.SIGTERM, signal_handler)
             signal.signal(signal.SIGINT, signal_handler)
             
-            # Ждем сигнал завершения
             await shutdown_event.wait()
             
-            # Graceful shutdown
             await graceful_shutdown()
         else:
-            # Запуск в режиме polling
             await bot.delete_webhook()
             log.info("✅ Polling mode")
             
-            # Настраиваем обработчики сигналов
             signal.signal(signal.SIGTERM, signal_handler)
             signal.signal(signal.SIGINT, signal_handler)
             

@@ -1,0 +1,26 @@
+# Telegram Bot Framework
+aiogram==3.4.1
+aiohttp==3.9.1
+
+# Database
+asyncpg==0.29.0
+
+# Payments
+yookassa==3.1.0
+
+# Google Cloud (для Veo 3 и Virtual Try-On)
+google-auth==2.27.0
+google-cloud-storage==2.14.0
+google-api-python-client==2.116.0
+
+# Image Processing
+Pillow==10.2.0
+
+# HTTP requests
+requests==2.31.0
+
+# Environment variables
+python-dotenv==1.0.0
+
+# Logging
+colorlog==6.8.0

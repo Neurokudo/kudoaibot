@@ -3,12 +3,28 @@
 
 import os
 import logging
-from openai import OpenAI
 
 log = logging.getLogger("ai_helper")
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
+
+# Ленивая инициализация клиента (не при импорте)
+_client = None
+
+def get_openai_client():
+    """Получить OpenAI клиента (ленивая инициализация)"""
+    global _client
+    
+    if _client is None and OPENAI_API_KEY:
+        try:
+            from openai import OpenAI
+            _client = OpenAI(api_key=OPENAI_API_KEY)
+            log.info("✅ OpenAI клиент инициализирован")
+        except Exception as e:
+            log.error(f"❌ Ошибка инициализации OpenAI: {e}")
+            _client = False  # Помечаем как неудачную попытку
+    
+    return _client if _client and _client is not False else None
 
 def improve_prompt_with_gpt(user_input: str, mode: str = "helper") -> str:
     """
@@ -21,6 +37,8 @@ def improve_prompt_with_gpt(user_input: str, mode: str = "helper") -> str:
     Returns:
         Улучшенный промпт для VEO 3
     """
+    client = get_openai_client()
+    
     if not client:
         log.warning("OpenAI API key not set, returning original prompt")
         return user_input

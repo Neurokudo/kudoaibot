@@ -450,7 +450,10 @@ async def main():
     if TELEGRAM_MODE == "webhook":
         # Запуск в режиме webhook
         app = web.Application()
-        app.router.add_post('/webhook', lambda req: dp.feed_webhook_update(bot, await req.json()))
+        async def webhook_handler(req):
+            return await dp.feed_webhook_update(bot, await req.json())
+        
+        app.router.add_post('/webhook', webhook_handler)
         app.router.add_post('/yookassa_webhook', yookassa_webhook)
         
         await on_startup()

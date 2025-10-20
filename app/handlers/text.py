@@ -8,11 +8,15 @@ from aiogram.types import Message
 from app.handlers.states import is_waiting_for_input
 from app.handlers.video_handlers import handle_text_input
 from app.handlers.commands import cmd_start
-from app.core.bot import dp
+from app.core.bot import get_bot
 
 log = logging.getLogger("kudoaibot")
 
-@dp.message(F.text & ~F.text.startswith("/"))
+def register_text_handlers():
+    """Регистрация текстовых обработчиков"""
+    bot, dp = get_bot()
+    dp.message.register(handle_text_message, F.text & ~F.text.startswith("/"))
+
 async def handle_text_message(message: Message):
     """Обработка текстовых сообщений"""
     user_id = message.from_user.id

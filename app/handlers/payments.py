@@ -11,11 +11,16 @@ from app.services.yookassa_service import (
 )
 from app.config.pricing import get_tariff_info, get_topup_pack
 from app.ui import Actions
-from app.core.bot import dp
+from app.core.bot import get_bot
 
 log = logging.getLogger("kudoaibot")
 
-@dp.callback_query(F.data.startswith("buy_tariff_"))
+def register_payment_handlers():
+    """Регистрация обработчиков платежей"""
+    bot, dp = get_bot()
+    dp.callback_query.register(handle_buy_tariff, F.data.startswith("buy_tariff_"))
+    dp.callback_query.register(handle_buy_topup, F.data.startswith("buy_topup_"))
+
 async def handle_buy_tariff(callback: CallbackQuery):
     """Обработка покупки тарифа"""
     await callback.answer()
@@ -56,7 +61,6 @@ async def handle_buy_tariff(callback: CallbackQuery):
     
     await callback.message.edit_text(payment_text, reply_markup=keyboard)
 
-@dp.callback_query(F.data.startswith("buy_topup_"))
 async def handle_buy_topup(callback: CallbackQuery):
     """Обработка покупки пополнения"""
     await callback.answer()

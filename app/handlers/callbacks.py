@@ -9,7 +9,7 @@ from app.db import users
 from app.services import billing
 from app.ui import Actions, t
 from app.ui.keyboards import build_main_menu, tariff_selection, topup_packs_menu
-from app.core.bot import dp
+from app.core.bot import get_bot
 from .commands import ensure_user_exists, get_user_language, get_user_data
 from .video_handlers import (
     handle_video_menu,
@@ -26,9 +26,39 @@ from .video_handlers import (
 
 log = logging.getLogger("kudoaibot")
 
+def register_callbacks():
+    """Регистрация callback обработчиков"""
+    bot, dp = get_bot()
+    
+    # Регистрируем все callback обработчики
+    dp.callback_query.register(callback_home, F.data == Actions.HOME)
+    dp.callback_query.register(callback_video, F.data == Actions.MENU_VIDEO)
+    dp.callback_query.register(callback_veo3, F.data == Actions.VIDEO_VEO3)
+    dp.callback_query.register(callback_sora2, F.data == Actions.VIDEO_SORA2)
+    dp.callback_query.register(callback_photo, F.data == Actions.MENU_PHOTO)
+    dp.callback_query.register(callback_tryon, F.data == Actions.MENU_TRYON)
+    dp.callback_query.register(callback_profile, F.data == Actions.MENU_PROFILE)
+    
+    # Режимы генерации
+    dp.callback_query.register(callback_mode_helper, F.data == Actions.MODE_HELPER)
+    dp.callback_query.register(callback_mode_manual, F.data == Actions.MODE_MANUAL)
+    dp.callback_query.register(callback_mode_meme, F.data == Actions.MODE_MEME)
+    
+    # Параметры видео
+    dp.callback_query.register(callback_orientation_portrait, F.data == Actions.ORIENTATION_PORTRAIT)
+    dp.callback_query.register(callback_orientation_landscape, F.data == Actions.ORIENTATION_LANDSCAPE)
+    dp.callback_query.register(callback_audio_yes, F.data == Actions.AUDIO_YES)
+    dp.callback_query.register(callback_audio_no, F.data == Actions.AUDIO_NO)
+    
+    # После генерации
+    dp.callback_query.register(callback_video_regenerate, F.data == Actions.VIDEO_REGENERATE)
+    dp.callback_query.register(callback_video_to_helper, F.data == Actions.VIDEO_TO_HELPER)
+    
+    # Покупка монеток
+    dp.callback_query.register(callback_show_topup, F.data == Actions.PAYMENT_TOPUP)
+
 # === НАВИГАЦИЯ ===
 
-@dp.callback_query(F.data == Actions.HOME)
 async def callback_home(callback: CallbackQuery):
     """Главное меню"""
     await callback.answer()
@@ -51,25 +81,24 @@ async def callback_home(callback: CallbackQuery):
 
 # === РАЗДЕЛЫ ===
 
-@dp.callback_query(F.data == Actions.MENU_VIDEO)
 async def callback_video(callback: CallbackQuery):
     """Раздел ВИДЕО"""
     await callback.answer()
     await handle_video_menu(callback)
 
-@dp.callback_query(F.data == Actions.VIDEO_VEO3)
+# @dp.callback_query(F.data == Actions.VIDEO_VEO3)
 async def callback_veo3(callback: CallbackQuery):
     """VEO 3 меню"""
     await callback.answer()
     await handle_veo3_menu(callback)
 
-@dp.callback_query(F.data == Actions.VIDEO_SORA2)
+# @dp.callback_query(F.data == Actions.VIDEO_SORA2)
 async def callback_sora2(callback: CallbackQuery):
     """SORA 2 меню"""
     await callback.answer()
     await handle_sora2_menu(callback)
 
-@dp.callback_query(F.data == Actions.MENU_PHOTO)
+# @dp.callback_query(F.data == Actions.MENU_PHOTO)
 async def callback_photo(callback: CallbackQuery):
     """Раздел ФОТО"""
     await callback.answer()
@@ -78,7 +107,7 @@ async def callback_photo(callback: CallbackQuery):
         reply_markup=build_main_menu()
     )
 
-@dp.callback_query(F.data == Actions.MENU_TRYON)
+# @dp.callback_query(F.data == Actions.MENU_TRYON)
 async def callback_tryon(callback: CallbackQuery):
     """Раздел ПРИМЕРОЧНАЯ"""
     await callback.answer()
@@ -87,7 +116,7 @@ async def callback_tryon(callback: CallbackQuery):
         reply_markup=build_main_menu()
     )
 
-@dp.callback_query(F.data == Actions.MENU_PROFILE)
+# @dp.callback_query(F.data == Actions.MENU_PROFILE)
 async def callback_profile(callback: CallbackQuery):
     """Профиль"""
     await callback.answer()
@@ -114,19 +143,19 @@ async def callback_profile(callback: CallbackQuery):
 
 # === РЕЖИМЫ ГЕНЕРАЦИИ ===
 
-@dp.callback_query(F.data == Actions.MODE_HELPER)
+# @dp.callback_query(F.data == Actions.MODE_HELPER)
 async def callback_mode_helper(callback: CallbackQuery):
     """Режим умного помощника"""
     await callback.answer()
     await handle_mode_helper(callback)
 
-@dp.callback_query(F.data == Actions.MODE_MANUAL)
+# @dp.callback_query(F.data == Actions.MODE_MANUAL)
 async def callback_mode_manual(callback: CallbackQuery):
     """Ручной режим"""
     await callback.answer()
     await handle_mode_manual(callback)
 
-@dp.callback_query(F.data == Actions.MODE_MEME)
+# @dp.callback_query(F.data == Actions.MODE_MEME)
 async def callback_mode_meme(callback: CallbackQuery):
     """Мемный режим"""
     await callback.answer()
@@ -134,25 +163,25 @@ async def callback_mode_meme(callback: CallbackQuery):
 
 # === ПАРАМЕТРЫ ВИДЕО ===
 
-@dp.callback_query(F.data == Actions.ORIENTATION_PORTRAIT)
+# @dp.callback_query(F.data == Actions.ORIENTATION_PORTRAIT)
 async def callback_orientation_portrait(callback: CallbackQuery):
     """Портретная ориентация"""
     await callback.answer()
     await handle_orientation_choice(callback)
 
-@dp.callback_query(F.data == Actions.ORIENTATION_LANDSCAPE)
+# @dp.callback_query(F.data == Actions.ORIENTATION_LANDSCAPE)
 async def callback_orientation_landscape(callback: CallbackQuery):
     """Ландшафтная ориентация"""
     await callback.answer()
     await handle_orientation_choice(callback)
 
-@dp.callback_query(F.data == Actions.AUDIO_YES)
+# @dp.callback_query(F.data == Actions.AUDIO_YES)
 async def callback_audio_yes(callback: CallbackQuery):
     """Со звуком"""
     await callback.answer()
     await handle_audio_choice(callback)
 
-@dp.callback_query(F.data == Actions.AUDIO_NO)
+# @dp.callback_query(F.data == Actions.AUDIO_NO)
 async def callback_audio_no(callback: CallbackQuery):
     """Без звука"""
     await callback.answer()
@@ -160,13 +189,13 @@ async def callback_audio_no(callback: CallbackQuery):
 
 # === ПОСЛЕ ГЕНЕРАЦИИ ===
 
-@dp.callback_query(F.data == Actions.VIDEO_REGENERATE)
+# @dp.callback_query(F.data == Actions.VIDEO_REGENERATE)
 async def callback_video_regenerate(callback: CallbackQuery):
     """Повторная генерация"""
     await callback.answer()
     await handle_video_regenerate(callback)
 
-@dp.callback_query(F.data == Actions.VIDEO_TO_HELPER)
+# @dp.callback_query(F.data == Actions.VIDEO_TO_HELPER)
 async def callback_video_to_helper(callback: CallbackQuery):
     """Переход к помощнику"""
     await callback.answer()
@@ -174,7 +203,7 @@ async def callback_video_to_helper(callback: CallbackQuery):
 
 # === ПОКУПКА МОНЕТОК ===
 
-@dp.callback_query(F.data == Actions.PAYMENT_TOPUP)
+# @dp.callback_query(F.data == Actions.PAYMENT_TOPUP)
 async def callback_show_topup(callback: CallbackQuery):
     """Показать пакеты пополнения монеток"""
     await callback.answer()

@@ -89,6 +89,9 @@ async def main():
         
         # Регистрация обработчиков
         commands.register_commands()
+        callbacks.register_callbacks()
+        text.register_text_handlers()
+        payments.register_payment_handlers()
         
         if TELEGRAM_MODE == "webhook":
             # Режим webhook для production

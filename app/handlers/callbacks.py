@@ -56,6 +56,9 @@ def register_callbacks():
     
     # Покупка монеток
     dp.callback_query.register(callback_show_topup, F.data == Actions.PAYMENT_TOPUP)
+    
+    # Fallback для необработанных callback'ов (должен быть последним!)
+    dp.callback_query.register(callback_fallback)
 
 # === НАВИГАЦИЯ ===
 
@@ -217,5 +220,19 @@ async def callback_show_topup(callback: CallbackQuery):
     await callback.message.edit_text(
         topup_text,
         reply_markup=topup_packs_menu()
+    )
+
+# === FALLBACK ===
+
+async def callback_fallback(callback: CallbackQuery):
+    """Обработка необработанных callback'ов"""
+    log.warning(f"Необработанный callback от пользователя {callback.from_user.id}: {callback.data}")
+    await callback.answer("⚠️ Эта кнопка пока не работает", show_alert=True)
+    
+    # Показываем главное меню
+    user_language = await get_user_language(callback.from_user.id)
+    await callback.message.edit_text(
+        "🏠 Главное меню",
+        reply_markup=build_main_menu(user_language)
     )
 

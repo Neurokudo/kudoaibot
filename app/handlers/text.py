@@ -15,7 +15,12 @@ log = logging.getLogger("kudoaibot")
 def register_text_handlers():
     """Регистрация текстовых обработчиков"""
     bot, dp = get_bot()
+    
+    # Регистрируем обработчик текстовых сообщений (не команд)
     dp.message.register(handle_text_message, F.text & ~F.text.startswith("/"))
+    
+    # Регистрируем fallback для всех остальных типов сообщений
+    dp.message.register(handle_fallback_message)
 
 async def handle_text_message(message: Message):
     """Обработка текстовых сообщений"""
@@ -27,4 +32,11 @@ async def handle_text_message(message: Message):
     else:
         # Если не ждём ввода, показываем меню
         await cmd_start(message)
+
+async def handle_fallback_message(message: Message):
+    """Обработка всех остальных типов сообщений (фото, видео, стикеры и т.д.)"""
+    log.info(f"Получено необработанное сообщение от пользователя {message.from_user.id}: {message.content_type}")
+    
+    # Просто показываем главное меню
+    await cmd_start(message)
 

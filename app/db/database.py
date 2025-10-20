@@ -40,6 +40,22 @@ async def init_db() -> bool:
                 await conn.execute(schema_sql)
             log.info("✅ Таблицы базы данных созданы/обновлены")
         
+        # Применение миграций
+        migrations_dir = os.path.join(os.path.dirname(__file__), "migrations")
+        if os.path.exists(migrations_dir):
+            migration_files = sorted([f for f in os.listdir(migrations_dir) if f.endswith('.sql')])
+            for migration_file in migration_files:
+                migration_path = os.path.join(migrations_dir, migration_file)
+                try:
+                    with open(migration_path, 'r', encoding='utf-8') as f:
+                        migration_sql = f.read()
+                    
+                    async with _db_pool.acquire() as conn:
+                        await conn.execute(migration_sql)
+                    log.info(f"✅ Миграция применена: {migration_file}")
+                except Exception as e:
+                    log.warning(f"⚠️ Ошибка применения миграции {migration_file}: {e}")
+        
         return True
         
     except Exception as e:

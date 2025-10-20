@@ -24,7 +24,7 @@ async def expire_subscription_coins():
     3. Уведомить пользователей о сгорании
     """
     try:
-        pool = await database.get_pool()
+        pool = database.get_db_pool()
         
         async with pool.acquire() as conn:
             # Находим пользователей с истёкшими подписками
@@ -107,7 +107,7 @@ async def check_expiring_soon(days_before: int = 3):
         days_before: За сколько дней до истечения предупредить
     """
     try:
-        pool = await database.get_pool()
+        pool = database.get_db_pool()
         
         async with pool.acquire() as conn:
             # Находим подписки, которые истекают скоро

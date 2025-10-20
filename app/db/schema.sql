@@ -1,5 +1,19 @@
 -- Схема базы данных KudoAiBot
 
+-- Добавляем столбцы для dual balance, если их нет (миграция)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name='users' AND column_name='subscription_coins') THEN
+        ALTER TABLE users ADD COLUMN subscription_coins INT DEFAULT 0;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name='users' AND column_name='permanent_coins') THEN
+        ALTER TABLE users ADD COLUMN permanent_coins INT DEFAULT 0;
+    END IF;
+END $$;
+
 CREATE TABLE IF NOT EXISTS users (
     user_id BIGINT PRIMARY KEY,
     username TEXT,
@@ -74,7 +88,10 @@ CREATE TABLE IF NOT EXISTS payments (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Индексы для оптимизации запросов
 CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_active ON subscriptions(user_id, is_active);
 CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_generations_user_id ON generations(user_id);
 CREATE INDEX IF NOT EXISTS idx_payments_payment_id ON payments(payment_id);
+CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);

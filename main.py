@@ -97,15 +97,12 @@ log = setup_logging()
 shutdown_event = asyncio.Event()
 runner = None
 
-def setup_bot_and_dispatcher():
-    """Инициализация бота и диспетчера"""
-    log.info("🔧 Инициализация бота и диспетчера...")
-    
-    bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-    dp = Dispatcher()
-    
-    log.info("✅ Бот и диспетчер инициализированы")
-    return bot, dp
+# Глобальные переменные для бота и диспетчера
+bot = None
+dp = None
+
+# Инициализируем бота и диспетчера сразу
+bot, dp = setup_bot_and_dispatcher()
 
 # === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
 
@@ -714,9 +711,6 @@ async def setup_web_app(dp, bot) -> web.Application:
 async def main():
     """Главная функция"""
     try:
-        # Инициализация бота и диспетчера
-        bot, dp = setup_bot_and_dispatcher()
-        
         # Инициализация базы данных
         await setup_bot()
         

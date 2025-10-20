@@ -28,6 +28,11 @@ async def setup_bot():
     # Запуск задачи проверки истекших подписок
     asyncio.create_task(check_expired_subscriptions_task())
     log.info("✅ Задача проверки подписок запущена")
+    
+    # Запуск задачи очистки подписочных монет
+    from app.services.coin_expiration import coin_expiration_task
+    asyncio.create_task(coin_expiration_task())
+    log.info("✅ Задача очистки подписочных монет запущена")
 
 async def check_expired_subscriptions_task():
     """Фоновая задача проверки истекших подписок"""

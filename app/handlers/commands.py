@@ -59,13 +59,21 @@ async def cmd_start(message: Message):
     user_language = await get_user_language(message.from_user.id)
     
     user_id = message.from_user.id
-    user_data = await get_user_data(user_id)
     name = message.from_user.first_name or "друг"
+    
+    # Получаем dual balance
+    from app.services.dual_balance import get_user_dual_balance, format_balance_display
+    from app.services import billing
+    
+    balance = await get_user_dual_balance(user_id)
+    
+    # Получаем информацию о подписке
+    status = await billing.get_user_subscription_status(user_id)
+    days_left = status.get('days_left', 0) if status.get('has_active') else None
     
     welcome_text = f"👋 Привет, {name}!\n\n"
     welcome_text += "🤖 <b>KudoAiBot</b> - твой AI помощник\n\n"
-    welcome_text += "📊 Твой баланс: {videos_left} монеток\n".format(**user_data)
-    welcome_text += "💼 Тариф: {subscription_type}\n\n".format(**user_data)
+    welcome_text += format_balance_display(balance, days_left) + "\n\n"
     welcome_text += "Выбери раздел:"
     
     await message.answer(
@@ -112,16 +120,27 @@ async def cmd_balance(message: Message):
     user_id = message.from_user.id
     user_language = await get_user_language(user_id)
     
+    from app.services.dual_balance import get_user_dual_balance, format_balance_display
+    from app.utils.formatting import format_coins
+    
+    # Получаем dual balance
+    balance = await get_user_dual_balance(user_id)
     status = await billing.get_user_subscription_status(user_id)
-    balance = status['balance']
     
     balance_text = f"💰 <b>Ваш баланс</b>\n\n"
-    balance_text += f"Монеток: <b>{balance}</b>\n\n"
+    
+    # Детальный баланс
+    if balance['subscription_coins'] > 0:
+        balance_text += f"🟢 Подписочные: {format_coins(balance['subscription_coins'])}\n"
+    if balance['permanent_coins'] > 0:
+        balance_text += f"🟣 Постоянные: {format_coins(balance['permanent_coins'])}\n"
+    
+    balance_text += f"📊 <b>Итого: {format_coins(balance['total'])}</b>\n\n"
     
     if status['has_active']:
         balance_text += f"📋 Подписка: <b>{status['plan']}</b>\n"
-        balance_text += f"Действует до: {status['expires_at'].strftime('%d.%m.%Y')}\n"
-        balance_text += f"Осталось дней: {status['days_left']}\n"
+        balance_text += f"🔋 Действует до: {status['expires_at'].strftime('%d.%m.%Y')}\n"
+        balance_text += f"🔋 Осталось: {status['days_left']} дней\n"
     else:
         balance_text += f"📋 Подписка: <b>отсутствует</b>\n"
     

@@ -146,9 +146,9 @@ def topup_packs_menu(lang: str = "ru") -> InlineKeyboardMarkup:
     for pack in TOPUP_PACKS:
         total_coins = pack.coins + pack.bonus_coins
         if pack.bonus_coins > 0:
-            button_text = f"💰 {total_coins} монет ({pack.coins}+{pack.bonus_coins} бонус) — {pack.price_rub} ₽"
+            button_text = f"💰 {total_coins} монеток ({pack.coins}+{pack.bonus_coins} бонус) — {pack.price_rub} ₽"
         else:
-            button_text = f"💰 {pack.coins} монет — {pack.price_rub} ₽"
+            button_text = f"💰 {pack.coins} монеток — {pack.price_rub} ₽"
         
         keyboard.append([
             InlineKeyboardButton(

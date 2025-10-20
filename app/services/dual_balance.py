@@ -259,36 +259,43 @@ async def check_can_spend(user_id: int, coins: int) -> Dict:
         'shortage': max(0, coins - balance['total'])
     }
 
-def format_balance_display(balance: Dict) -> str:
+def format_balance_display(balance: Dict, days_left: int = None) -> str:
     """
     Форматировать баланс для отображения пользователю
     
     Args:
         balance: Словарь с балансами
+        days_left: Дней до истечения подписки (опционально)
     
     Returns:
         Текст для отображения
     """
+    from app.utils.formatting import format_coins
+    
     total = balance['total']
     sub = balance['subscription_coins']
     perm = balance['permanent_coins']
     
+    lines = []
+    
     if sub > 0 and perm > 0:
-        return (
-            f"💰 <b>Баланс: {total} монет</b>\n"
-            f"├ 🟢 Подписочные: {sub} (сгорают через 30 дней)\n"
-            f"└ 🟣 Постоянные: {perm} (навсегда)"
-        )
+        lines.append(f"💰 <b>Баланс: {format_coins(total)}</b>")
+        lines.append(f"├ 🟢 Подписочные: {format_coins(sub, short=True)}")
+        lines.append(f"└ 🟣 Постоянные: {format_coins(perm, short=True)}")
     elif sub > 0:
-        return (
-            f"💰 <b>Баланс: {total} монет</b>\n"
-            f"└ 🟢 Подписочные (сгорают через 30 дней)"
-        )
+        lines.append(f"💰 <b>Баланс: {format_coins(total)}</b>")
+        lines.append(f"└ 🟢 Подписочные монетки")
     elif perm > 0:
-        return (
-            f"💰 <b>Баланс: {total} монет</b>\n"
-            f"└ 🟣 Постоянные (навсегда)"
-        )
+        lines.append(f"💰 <b>Баланс: {format_coins(total)}</b>")
+        lines.append(f"└ 🟣 Постоянные монетки")
     else:
-        return "💰 <b>Баланс: 0 монет</b>"
+        lines.append(f"💰 <b>Баланс: 0 монеток</b>")
+    
+    # Добавляем информацию о подписке если есть
+    if days_left is not None and days_left > 0:
+        lines.append(f"🔋 <b>Осталось по подписке: {days_left} дней</b>")
+    
+    lines.append(f"📊 <b>Итого монеток: {total}</b>")
+    
+    return "\n".join(lines)
 

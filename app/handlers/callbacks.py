@@ -8,7 +8,7 @@ from aiogram.types import CallbackQuery
 from app.db import users
 from app.services import billing
 from app.ui import Actions, t
-from app.ui.keyboards import build_main_menu, tariff_selection
+from app.ui.keyboards import build_main_menu, tariff_selection, topup_packs_menu
 from app.core.bot import dp
 from .commands import ensure_user_exists, get_user_language, get_user_data
 from .video_handlers import (
@@ -171,4 +171,22 @@ async def callback_video_to_helper(callback: CallbackQuery):
     """Переход к помощнику"""
     await callback.answer()
     await handle_video_to_helper(callback)
+
+# === ПОКУПКА МОНЕТОК ===
+
+@dp.callback_query(F.data == Actions.PAYMENT_TOPUP)
+async def callback_show_topup(callback: CallbackQuery):
+    """Показать пакеты пополнения монеток"""
+    await callback.answer()
+    
+    from app.config.pricing import format_topup_packs_text
+    
+    topup_text = "💰 <b>Купить монетки</b>\n\n"
+    topup_text += format_topup_packs_text()
+    topup_text += "\n\n💡 Выберите пакет:"
+    
+    await callback.message.edit_text(
+        topup_text,
+        reply_markup=topup_packs_menu()
+    )
 

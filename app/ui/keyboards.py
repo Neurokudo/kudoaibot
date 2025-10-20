@@ -16,6 +16,7 @@ __all__ = [
     'build_confirm_generate',
     'build_keyboard',
     'tariff_selection',
+    'topup_packs_menu',
     'btn'
 ]
 
@@ -114,7 +115,52 @@ def tariff_selection(lang: str = "ru") -> InlineKeyboardMarkup:
             )
         ])
     
+    # Кнопка "Купить монетки"
+    keyboard.append([
+        InlineKeyboardButton(
+            text="💰 Купить монетки",
+            callback_data=Actions.PAYMENT_TOPUP
+        )
+    ])
+    
     # Кнопка "Главное меню"
+    keyboard.append([
+        InlineKeyboardButton(
+            text=t("btn.home", lang),
+            callback_data=Actions.HOME
+        )
+    ])
+    
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+def topup_packs_menu(lang: str = "ru") -> InlineKeyboardMarkup:
+    """Клавиатура выбора пакетов пополнения"""
+    from app.config.pricing import TOPUP_PACKS
+    
+    keyboard = []
+    
+    # Добавляем кнопки для каждого пакета
+    for pack in TOPUP_PACKS:
+        total_coins = pack.coins + pack.bonus_coins
+        if pack.bonus_coins > 0:
+            button_text = f"💰 {total_coins} монет ({pack.coins}+{pack.bonus_coins} бонус) — {pack.price_rub} ₽"
+        else:
+            button_text = f"💰 {pack.coins} монет — {pack.price_rub} ₽"
+        
+        keyboard.append([
+            InlineKeyboardButton(
+                text=button_text,
+                callback_data=f"buy_topup_{pack.coins}"
+            )
+        ])
+    
+    # Кнопки навигации
+    keyboard.append([
+        InlineKeyboardButton(
+            text="⬅️ К тарифам",
+            callback_data=Actions.MENU_PROFILE
+        )
+    ])
     keyboard.append([
         InlineKeyboardButton(
             text=t("btn.home", lang),

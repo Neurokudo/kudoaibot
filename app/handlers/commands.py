@@ -1,0 +1,173 @@
+# app/handlers/commands.py
+"""Обработчики команд бота (/start, /help, и т.д.)"""
+
+import logging
+from aiogram import types, F
+from aiogram.filters import Command, CommandStart
+from aiogram.types import Message
+
+from app.db import users
+from app.services import balance_manager, billing
+from app.ui import t
+from app.ui.keyboards import build_main_menu, tariff_selection
+from app.config.pricing import get_full_pricing_text
+from app.core.bot import dp
+
+log = logging.getLogger("kudoaibot")
+
+# === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
+
+async def ensure_user_exists(message: Message) -> dict:
+    """Убедиться, что пользователь существует в БД"""
+    user = await users.get_user(message.from_user.id)
+    if not user:
+        user = await users.create_user(
+            user_id=message.from_user.id,
+            username=message.from_user.username,
+            first_name=message.from_user.first_name,
+            last_name=message.from_user.last_name,
+            language='ru'
+        )
+        log.info(f"✅ Создан новый пользователь: {message.from_user.id}")
+    return user
+
+async def get_user_language(user_id: int) -> str:
+    """Получить язык пользователя"""
+    user = await users.get_user(user_id)
+    return user['language'] if user else 'ru'
+
+async def get_user_data(user_id: int) -> dict:
+    """Получить данные пользователя включая подписку"""
+    user = await users.get_user(user_id)
+    if not user:
+        return {'subscription_type': 'Без подписки', 'videos_left': 0}
+    
+    status = await billing.get_user_subscription_status(user_id)
+    
+    return {
+        'subscription_type': status.get('subscription_type', 'Без подписки'),
+        'videos_left': status.get('balance', 0),
+        'created_at': user.get('created_at', 'Неизвестно')
+    }
+
+# === ОБРАБОТЧИКИ КОМАНД ===
+
+@dp.message(CommandStart())
+async def cmd_start(message: Message):
+    """Обработчик команды /start"""
+    await ensure_user_exists(message)
+    user_language = await get_user_language(message.from_user.id)
+    
+    user_id = message.from_user.id
+    user_data = await get_user_data(user_id)
+    name = message.from_user.first_name or "друг"
+    
+    welcome_text = f"👋 Привет, {name}!\n\n"
+    welcome_text += "🤖 <b>KudoAiBot</b> - твой AI помощник\n\n"
+    welcome_text += "📊 Твой баланс: {videos_left} монеток\n".format(**user_data)
+    welcome_text += "💼 Тариф: {subscription_type}\n\n".format(**user_data)
+    welcome_text += "Выбери раздел:"
+    
+    await message.answer(
+        welcome_text,
+        reply_markup=build_main_menu(user_language)
+    )
+
+@dp.message(Command("help"))
+async def cmd_help(message: Message):
+    """Обработчик команды /help"""
+    await ensure_user_exists(message)
+    user_language = await get_user_language(message.from_user.id)
+    
+    help_text = """
+🤖 <b>KudoAiBot - Инструкция</b>
+
+<b>РАЗДЕЛЫ:</b>
+
+🎬 <b>ВИДЕО</b>
+• SORA 2 - генерация видео через OpenAI
+• VEO 3 - генерация видео через Google
+
+<b>Режимы генерации:</b>
+🤖 Умный помощник - опишите идею, GPT создаст промпт
+✋ Ручной режим - введите готовый промпт
+😄 Мемный режим - быстрые короткие мемы
+
+📸 <b>ФОТО</b> (скоро)
+• Различные функции для работы с фото
+
+👗 <b>ПРИМЕРОЧНАЯ</b>
+• Виртуальная примерочная одежды
+
+💰 <b>Монетки</b>
+• Генерация видео стоит монетки
+• Купить можно в разделе Профиль
+    """
+    await message.answer(help_text)
+
+@dp.message(Command("balance"))
+async def cmd_balance(message: Message):
+    """Показать баланс монеток"""
+    await ensure_user_exists(message)
+    user_id = message.from_user.id
+    user_language = await get_user_language(user_id)
+    
+    status = await billing.get_user_subscription_status(user_id)
+    balance = status['balance']
+    
+    balance_text = f"💰 <b>Ваш баланс</b>\n\n"
+    balance_text += f"Монеток: <b>{balance}</b>\n\n"
+    
+    if status['has_active']:
+        balance_text += f"📋 Подписка: <b>{status['plan']}</b>\n"
+        balance_text += f"Действует до: {status['expires_at'].strftime('%d.%m.%Y')}\n"
+        balance_text += f"Осталось дней: {status['days_left']}\n"
+    else:
+        balance_text += f"📋 Подписка: <b>отсутствует</b>\n"
+    
+    await message.answer(balance_text)
+
+@dp.message(Command("profile"))
+async def cmd_profile(message: Message):
+    """Показать профиль пользователя"""
+    await ensure_user_exists(message)
+    user_id = message.from_user.id
+    
+    user = await users.get_user(user_id)
+    status = await billing.get_user_subscription_status(user_id)
+    summary = await balance_manager.get_user_summary(user_id, days=30)
+    
+    profile_text = f"👤 <b>Ваш профиль</b>\n\n"
+    profile_text += f"ID: <code>{user_id}</code>\n"
+    profile_text += f"Имя: {user['first_name']}\n"
+    if user['username']:
+        profile_text += f"Username: @{user['username']}\n"
+    
+    profile_text += f"\n💰 <b>Монетки</b>\n"
+    profile_text += f"Баланс: <b>{status['balance']}</b>\n"
+    
+    if status['has_active']:
+        profile_text += f"\n📋 <b>Подписка</b>\n"
+        profile_text += f"План: <b>{status['plan']}</b>\n"
+        profile_text += f"До: {status['expires_at'].strftime('%d.%m.%Y')}\n"
+    
+    stats = summary['stats']
+    if stats['spend_count'] > 0:
+        profile_text += f"\n📊 <b>За 30 дней</b>\n"
+        profile_text += f"Потрачено: {stats['total_spent']} монеток\n"
+        profile_text += f"Операций: {stats['spend_count']}\n"
+    
+    await message.answer(profile_text)
+
+@dp.message(Command("tariffs"))
+async def cmd_tariffs(message: Message):
+    """Показать тарифы"""
+    await ensure_user_exists(message)
+    user_language = await get_user_language(message.from_user.id)
+    
+    tariffs_text = get_full_pricing_text()
+    await message.answer(
+        tariffs_text,
+        reply_markup=tariff_selection(user_language)
+    )
+

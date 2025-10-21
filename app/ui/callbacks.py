@@ -79,12 +79,20 @@ class Actions:
     SET_LANGUAGE = "set_language"
     
     # Главное меню
-    MENU_VIDEO = "menu_video"
+    MENU_GENERATE = "menu_generate"
+    MENU_LEGO = "menu_lego"
     MENU_PHOTO = "menu_photo"
     MENU_TRYON = "menu_tryon"
     MENU_PROFILE = "menu_profile"
     MENU_TARIFFS = "menu_tariffs"
     MENU_HELP = "menu_help"
+    
+    # LEGO режим
+    LEGO_SINGLE = "lego_single"
+    LEGO_REPORTAGE = "lego_reportage"
+    LEGO_REGENERATE = "lego_regenerate"
+    LEGO_IMPROVE = "lego_improve"
+    LEGO_EMBED_REPLICA = "lego_embed_replica"
     
     # Раздел ВИДЕО
     VIDEO_SORA2 = "video_sora2"

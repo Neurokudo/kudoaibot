@@ -41,9 +41,8 @@ def register_callbacks():
     
     # Регистрируем все callback обработчики
     dp.callback_query.register(callback_home, F.data == "home")
-    dp.callback_query.register(callback_video, F.data == "menu_video")
-    dp.callback_query.register(callback_veo3, F.data == "video_veo3")
-    dp.callback_query.register(callback_sora2, F.data == "video_sora2")
+    dp.callback_query.register(callback_generate, F.data == "menu_generate")
+    dp.callback_query.register(callback_lego, F.data == "menu_lego")
     dp.callback_query.register(callback_photo, F.data == "menu_photo")
     dp.callback_query.register(callback_tryon, F.data == "menu_tryon")
     dp.callback_query.register(callback_profile, F.data == "menu_profile")
@@ -52,6 +51,13 @@ def register_callbacks():
     dp.callback_query.register(callback_mode_helper, F.data == Actions.MODE_HELPER)
     dp.callback_query.register(callback_mode_manual, F.data == Actions.MODE_MANUAL)
     dp.callback_query.register(callback_mode_meme, F.data == Actions.MODE_MEME)
+    
+    # LEGO режим
+    dp.callback_query.register(callback_lego_single, F.data == Actions.LEGO_SINGLE)
+    dp.callback_query.register(callback_lego_reportage, F.data == Actions.LEGO_REPORTAGE)
+    dp.callback_query.register(callback_lego_regenerate, F.data == Actions.LEGO_REGENERATE)
+    dp.callback_query.register(callback_lego_improve, F.data == Actions.LEGO_IMPROVE)
+    dp.callback_query.register(callback_lego_embed_replica, F.data == Actions.LEGO_EMBED_REPLICA)
     
     # Параметры видео
     dp.callback_query.register(callback_orientation_portrait, F.data == Actions.ORIENTATION_PORTRAIT)
@@ -119,22 +125,15 @@ async def callback_home(callback: CallbackQuery):
 
 # === РАЗДЕЛЫ ===
 
-async def callback_video(callback: CallbackQuery):
-    """Раздел ВИДЕО"""
+async def callback_generate(callback: CallbackQuery):
+    """Раздел Генерировать видео (VEO 3)"""
     await callback.answer()
-    await handle_video_menu(callback)
+    await handle_generate_menu(callback)
 
-# @dp.callback_query(F.data == Actions.VIDEO_VEO3)
-async def callback_veo3(callback: CallbackQuery):
-    """VEO 3 меню"""
+async def callback_lego(callback: CallbackQuery):
+    """Раздел LEGO мультики"""
     await callback.answer()
-    await handle_veo3_menu(callback)
-
-# @dp.callback_query(F.data == Actions.VIDEO_SORA2)
-async def callback_sora2(callback: CallbackQuery):
-    """SORA 2 меню"""
-    await callback.answer()
-    await handle_sora2_menu(callback)
+    await handle_lego_menu(callback)
 
 # @dp.callback_query(F.data == Actions.MENU_PHOTO)
 async def callback_photo(callback: CallbackQuery):
@@ -594,4 +593,46 @@ async def callback_set_language(callback: CallbackQuery):
         t("language.selected", language),
         reply_markup=build_main_menu(language)
     )
+
+# === LEGO ОБРАБОТЧИКИ ===
+
+async def callback_lego_single(callback: CallbackQuery):
+    """LEGO одна сцена"""
+    await callback.answer()
+    # TODO: Реализовать LEGO одну сцену
+    await callback.message.edit_text(
+        "🎬 <b>LEGO одна сцена</b>\n\n⚠️ Функция в разработке",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [btn("⬅️ Назад", Actions.HOME)]
+        ])
+    )
+
+async def callback_lego_reportage(callback: CallbackQuery):
+    """LEGO репортаж"""
+    await callback.answer()
+    # TODO: Реализовать LEGO репортаж
+    await callback.message.edit_text(
+        "📰 <b>LEGO репортаж</b>\n\n⚠️ Функция в разработке",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [btn("⬅️ Назад", Actions.HOME)]
+        ])
+    )
+
+async def callback_lego_regenerate(callback: CallbackQuery):
+    """LEGO перегенерировать"""
+    await callback.answer()
+    # TODO: Реализовать LEGO перегенерацию
+    await callback.message.edit_text("🔄 Перегенерирую LEGO видео...")
+
+async def callback_lego_improve(callback: CallbackQuery):
+    """LEGO улучшить"""
+    await callback.answer()
+    # TODO: Реализовать LEGO улучшение
+    await callback.message.edit_text("✨ Улучшаю LEGO видео...")
+
+async def callback_lego_embed_replica(callback: CallbackQuery):
+    """LEGO встроить реплику"""
+    await callback.answer()
+    # TODO: Реализовать LEGO встраивание реплики
+    await callback.message.edit_text("📝 Встраиваю реплику в LEGO видео...")
 

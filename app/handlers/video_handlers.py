@@ -37,28 +37,27 @@ async def handle_video_menu(callback: CallbackQuery):
         reply_markup=build_video_menu()
     )
 
-async def handle_veo3_menu(callback: CallbackQuery):
-    """Меню режимов VEO 3"""
+async def handle_generate_menu(callback: CallbackQuery):
+    """Меню режимов генерации VEO 3 (как в babka-bot-clean)"""
     user_id = callback.from_user.id
     state = get_user_state(user_id)
-    state.video_model = "veo3"
-    state.current_screen = "veo3_modes"
+    state.video_model = "veo3"  # По умолчанию VEO 3
+    state.current_screen = "generate_modes"
     
     await callback.message.edit_text(
-        t("veo3.modes"),
-        reply_markup=build_veo3_modes()
+        t("menu.generate"),
+        reply_markup=build_generate_menu()
     )
 
-async def handle_sora2_menu(callback: CallbackQuery):
-    """Меню режимов SORA 2"""
+async def handle_lego_menu(callback: CallbackQuery):
+    """Меню LEGO мультиков"""
     user_id = callback.from_user.id
     state = get_user_state(user_id)
-    state.video_model = "sora2"
-    state.current_screen = "sora2_modes"
+    state.current_screen = "lego_menu"
     
     await callback.message.edit_text(
-        t("sora2.modes"),
-        reply_markup=build_sora2_modes()
+        t("menu.lego"),
+        reply_markup=build_lego_menu()
     )
 
 async def handle_mode_helper(callback: CallbackQuery):

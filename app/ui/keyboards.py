@@ -41,9 +41,10 @@ def build_language_menu() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 def build_main_menu(lang: str = "ru") -> InlineKeyboardMarkup:
-    """Главное меню - финальная версия"""
+    """Главное меню - как в babka-bot-clean"""
     keyboard = [
-        [btn("🎬 Создать видео", "menu_video")],
+        [btn("🎬 Генерировать видео", "menu_generate")],
+        [btn("🧱 LEGO мультики", "menu_lego")],
         [btn("🪄 Редактировать фото", "menu_photo")],
         [btn("👗 Примерочная", "menu_tryon")],
         [btn("💳 Подписка и монетки", "menu_tariffs")],
@@ -52,26 +53,31 @@ def build_main_menu(lang: str = "ru") -> InlineKeyboardMarkup:
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
-def build_video_menu(lang: str = "ru") -> InlineKeyboardMarkup:
-    """Меню выбора платформы видео"""
+def build_generate_menu(lang: str = "ru") -> InlineKeyboardMarkup:
+    """Меню режимов генерации VEO 3 (как в babka-bot-clean)"""
     from app.core.features import FeatureFlags
     
     keyboard = []
     
-    # VEO 3 платформа (если доступна)
-    if FeatureFlags.has_veo3():
-        keyboard.append([btn("🔵 VEO 3", Actions.VIDEO_VEO3)])
-    else:
-        keyboard.append([btn("⚠️ VEO 3 недоступен (нет GCP ключа)", "disabled_veo3")])
+    # GPT режимы (только если OpenAI доступен)
+    if FeatureFlags.has_gpt_helper():
+        keyboard.append([btn(t("mode.helper", lang), Actions.MODE_HELPER)])
+        keyboard.append([btn(t("mode.meme", lang), Actions.MODE_MEME)])
     
-    # SORA 2 платформа (если доступна)
-    if FeatureFlags.has_sora2():
-        keyboard.append([btn("🔸 SORA 2", Actions.VIDEO_SORA2)])
-    else:
-        keyboard.append([btn("⚠️ SORA 2 недоступен (нет OpenAI ключа)", "disabled_sora2")])
+    # Ручной режим (всегда доступен)
+    keyboard.append([btn(t("mode.manual", lang), Actions.MODE_MANUAL)])
     
     keyboard.append([btn(t("btn.back", lang), Actions.HOME)])
     
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+def build_lego_menu(lang: str = "ru") -> InlineKeyboardMarkup:
+    """Меню LEGO мультиков (как в babka-bot-clean)"""
+    keyboard = [
+        [btn(t("lego.single", lang), Actions.LEGO_SINGLE)],
+        [btn(t("lego.reportage", lang), Actions.LEGO_REPORTAGE)],
+        [btn(t("btn.back", lang), Actions.HOME)]
+    ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 def build_veo3_modes(lang: str = "ru") -> InlineKeyboardMarkup:

@@ -11,8 +11,8 @@ T = {
         "menu.main": "🏠 <b>Главное меню</b>\n\nВыберите раздел:",
         
         # Разделы
-        "menu.video": "🎬 <b>ВИДЕО</b>\n\nВыберите платформу для генерации:",
-        "menu.video_platforms": "🎬 <b>ВИДЕО</b>\n\nВыберите платформу для генерации:\n\n🔵 <b>VEO 3</b> — Google Video Generation\n🔸 <b>SORA 2</b> — OpenAI Video Generation",
+        "menu.generate": "🎬 <b>Генерировать видео</b>\n\nВыберите режим генерации:",
+        "menu.lego": "🧱 <b>Режим «LEGO мультики» активирован!</b>",
         "menu.photo": "📸 <b>ФОТО</b>\n\nРедактирование фото через Gemini:\n\n• Улучшение качества — 4 монетки за операцию\n• Удаление фона — 4 монетки за операцию\n• Ретушь — 4 монетки за операцию\n• Смена стиля — 4 монетки за операцию",
         "menu.tryon": "👗 <b>ВИРТУАЛЬНАЯ ПРИМЕРОЧНАЯ</b>\n\nИспользуйте Imagen Try-On:\n\n• Imagen Try-On (1 образ) — 6 монеток\n• Imagen Fashion — 10 монеток\n• Imagen Pro (3 образа) — 15 монеток\n\n1) Пришлите фото человека\n2) Затем фото одежды",
         
@@ -26,6 +26,13 @@ T = {
         "mode.helper": "🤖 С помощником",
         "mode.manual": "✋ Вручную", 
         "mode.meme": "😄 Мем",
+        
+        # LEGO режим
+        "lego.single": "🎬 Одна сцена",
+        "lego.reportage": "📰 Репортаж",
+        "lego.regenerate": "🔄 Перегенерировать",
+        "lego.improve": "✨ Улучшить",
+        "lego.embed_replica": "📝 Встроить реплику",
         
         # SORA 2 режимы
         "sora2.modes": "🔸 <b>SORA 2</b>\n\nВыберите режим генерации:",
@@ -98,8 +105,8 @@ T = {
         "menu.main": "🏠 <b>Main Menu</b>\n\nChoose section:",
         
         # Sections
-        "menu.video": "🎬 <b>VIDEO</b>\n\nChoose platform for generation:",
-        "menu.video_platforms": "🎬 <b>VIDEO</b>\n\nChoose platform for generation:\n\n🔵 <b>VEO 3</b> — Google Video Generation\n🔸 <b>SORA 2</b> — OpenAI Video Generation",
+        "menu.generate": "🎬 <b>Generate Video</b>\n\nChoose generation mode:",
+        "menu.lego": "🧱 <b>LEGO Cartoons mode activated!</b>",
         "menu.photo": "📸 <b>PHOTO</b>\n\nPhoto editing via Gemini:\n\n• Quality enhancement — 4 coins per operation\n• Background removal — 4 coins per operation\n• Retouching — 4 coins per operation\n• Style change — 4 coins per operation",
         "menu.tryon": "👗 <b>VIRTUAL TRY-ON</b>\n\nUse Imagen Try-On:\n\n• Imagen Try-On (1 outfit) — 6 coins\n• Imagen Fashion — 10 coins\n• Imagen Pro (3 outfits) — 15 coins\n\n1) Send person photo\n2) Then clothing photo",
         
@@ -107,6 +114,13 @@ T = {
         "mode.helper": "🤖 With assistant",
         "mode.manual": "✋ Manual", 
         "mode.meme": "😄 Meme",
+        
+        # LEGO mode
+        "lego.single": "🎬 Single scene",
+        "lego.reportage": "📰 Reportage",
+        "lego.regenerate": "🔄 Regenerate",
+        "lego.improve": "✨ Improve",
+        "lego.embed_replica": "📝 Embed replica",
         
         # Buttons
         "btn.video": "🎬 VIDEO",
@@ -126,8 +140,8 @@ T = {
         "menu.main": "🏠 <b>Menú Principal</b>\n\nElige sección:",
         
         # Sections
-        "menu.video": "🎬 <b>VIDEO</b>\n\nElige plataforma para generación:",
-        "menu.video_platforms": "🎬 <b>VIDEO</b>\n\nElige plataforma para generación:\n\n🔵 <b>VEO 3</b> — Google Video Generation\n🔸 <b>SORA 2</b> — OpenAI Video Generation",
+        "menu.generate": "🎬 <b>Generar Video</b>\n\nElige modo de generación:",
+        "menu.lego": "🧱 <b>¡Modo «LEGO Cartoons» activado!</b>",
         "menu.photo": "📸 <b>FOTO</b>\n\nEdición de fotos vía Gemini:\n\n• Mejora de calidad — 4 monedas por operación\n• Eliminación de fondo — 4 monedas por operación\n• Retoque — 4 monedas por operación\n• Cambio de estilo — 4 monedas por operación",
         "menu.tryon": "👗 <b>PROBADOR VIRTUAL</b>\n\nUsa Imagen Try-On:\n\n• Imagen Try-On (1 outfit) — 6 monedas\n• Imagen Fashion — 10 monedas\n• Imagen Pro (3 outfits) — 15 monedas\n\n1) Envía foto de persona\n2) Luego foto de ropa",
         
@@ -135,6 +149,13 @@ T = {
         "mode.helper": "🤖 Con asistente",
         "mode.manual": "✋ Manual", 
         "mode.meme": "😄 Meme",
+        
+        # LEGO mode
+        "lego.single": "🎬 Una escena",
+        "lego.reportage": "📰 Reportaje",
+        "lego.regenerate": "🔄 Regenerar",
+        "lego.improve": "✨ Mejorar",
+        "lego.embed_replica": "📝 Insertar réplica",
         
         # Buttons
         "btn.video": "🎬 VIDEO",
@@ -154,8 +175,8 @@ T = {
         "menu.main": "🏠 <b>القائمة الرئيسية</b>\n\nاختر القسم:",
         
         # Sections
-        "menu.video": "🎬 <b>فيديو</b>\n\nاختر المنصة للإنشاء:",
-        "menu.video_platforms": "🎬 <b>فيديو</b>\n\nاختر المنصة للإنشاء:\n\n🔵 <b>VEO 3</b> — Google Video Generation\n🔸 <b>SORA 2</b> — OpenAI Video Generation",
+        "menu.generate": "🎬 <b>إنشاء فيديو</b>\n\nاختر وضع الإنشاء:",
+        "menu.lego": "🧱 <b>وضع «LEGO Cartoons» مفعل!</b>",
         "menu.photo": "📸 <b>صورة</b>\n\nتعديل الصور عبر Gemini:\n\n• تحسين الجودة — 4 عملات لكل عملية\n• إزالة الخلفية — 4 عملات لكل عملية\n• التعديل — 4 عملات لكل عملية\n• تغيير الأسلوب — 4 عملات لكل عملية",
         "menu.tryon": "👗 <b>غرفة القياس الافتراضية</b>\n\nاستخدم Imagen Try-On:\n\n• Imagen Try-On (1 زي) — 6 عملات\n• Imagen Fashion — 10 عملات\n• Imagen Pro (3 أزياء) — 15 عملة\n\n1) أرسل صورة الشخص\n2) ثم صورة الملابس",
         
@@ -163,6 +184,13 @@ T = {
         "mode.helper": "🤖 مع المساعد",
         "mode.manual": "✋ يدوي", 
         "mode.meme": "😄 ميم",
+        
+        # LEGO mode
+        "lego.single": "🎬 مشهد واحد",
+        "lego.reportage": "📰 تقرير",
+        "lego.regenerate": "🔄 إعادة إنشاء",
+        "lego.improve": "✨ تحسين",
+        "lego.embed_replica": "📝 إدراج نسخة",
         
         # Buttons
         "btn.video": "🎬 فيديو",
@@ -182,8 +210,8 @@ T = {
         "menu.main": "🏠 <b>मुख्य मेनू</b>\n\nअनुभाग चुनें:",
         
         # Sections
-        "menu.video": "🎬 <b>वीडियो</b>\n\nजेनरेशन के लिए प्लेटफॉर्म चुनें:",
-        "menu.video_platforms": "🎬 <b>वीडियो</b>\n\nजेनरेशन के लिए प्लेटफॉर्म चुनें:\n\n🔵 <b>VEO 3</b> — Google Video Generation\n🔸 <b>SORA 2</b> — OpenAI Video Generation",
+        "menu.generate": "🎬 <b>वीडियो जेनरेट करें</b>\n\nजेनरेशन मोड चुनें:",
+        "menu.lego": "🧱 <b>LEGO Cartoons मोड सक्रिय!</b>",
         "menu.photo": "📸 <b>फोटो</b>\n\nGemini के माध्यम से फोटो संपादन:\n\n• गुणवत्ता सुधार — 4 सिक्के प्रति ऑपरेशन\n• पृष्ठभूमि हटाना — 4 सिक्के प्रति ऑपरेशन\n• रिटचिंग — 4 सिक्के प्रति ऑपरेशन\n• स्टाइल बदलना — 4 सिक्के प्रति ऑपरेशन",
         "menu.tryon": "👗 <b>वर्चुअल ट्राई-ऑन</b>\n\nImagen Try-On का उपयोग करें:\n\n• Imagen Try-On (1 आउटफिट) — 6 सिक्के\n• Imagen Fashion — 10 सिक्के\n• Imagen Pro (3 आउटफिट) — 15 सिक्के\n\n1) व्यक्ति की फोटो भेजें\n2) फिर कपड़े की फोटो",
         
@@ -191,6 +219,13 @@ T = {
         "mode.helper": "🤖 सहायक के साथ",
         "mode.manual": "✋ मैनुअल", 
         "mode.meme": "😄 मीम",
+        
+        # LEGO mode
+        "lego.single": "🎬 एक दृश्य",
+        "lego.reportage": "📰 रिपोर्ट",
+        "lego.regenerate": "🔄 पुनः जेनरेट करें",
+        "lego.improve": "✨ सुधारें",
+        "lego.embed_replica": "📝 रेप्लिका एम्बेड करें",
         
         # Buttons
         "btn.video": "🎬 वीडियो",

@@ -41,9 +41,12 @@ def build_language_menu() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 def build_main_menu(lang: str = "ru") -> InlineKeyboardMarkup:
-    """Главное меню - как в babka-bot-clean"""
+    """Главное меню - плоская структура (Вариант 2)"""
     keyboard = [
-        [btn("🎬 Генерировать видео", "menu_generate")],
+        [btn("🎬 Создать видео", "menu_create_video")],
+        [btn("🧠 Умный помощник", "menu_helper")],
+        [btn("🔮 Как у Neurokudo", "menu_neurokudo")],
+        [btn("🤡 Мемный режим", "menu_meme")],
         [btn("🧱 LEGO мультики", "menu_lego")],
         [btn("🪄 Редактировать фото", "menu_photo")],
         [btn("👗 Примерочная", "menu_tryon")],
@@ -53,19 +56,89 @@ def build_main_menu(lang: str = "ru") -> InlineKeyboardMarkup:
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
-def build_generate_menu(lang: str = "ru") -> InlineKeyboardMarkup:
-    """Меню режимов генерации VEO 3 (как в babka-bot-clean)"""
+def build_create_video_menu(lang: str = "ru") -> InlineKeyboardMarkup:
+    """Меню быстрого создания видео - выбор модели"""
     from app.core.features import FeatureFlags
     
     keyboard = []
     
-    # GPT режимы (только если OpenAI доступен)
-    if FeatureFlags.has_gpt_helper():
-        keyboard.append([btn(t("mode.helper", lang), Actions.MODE_HELPER)])
-        keyboard.append([btn(t("mode.meme", lang), Actions.MODE_MEME)])
+    # VEO 3 (если доступен)
+    if FeatureFlags.has_veo3():
+        keyboard.append([btn("🔵 VEO 3", Actions.VIDEO_VEO3)])
+    else:
+        keyboard.append([btn("⚠️ VEO 3 недоступен (нет GCP ключа)", "disabled_veo3")])
     
-    # Ручной режим (всегда доступен)
-    keyboard.append([btn(t("mode.manual", lang), Actions.MODE_MANUAL)])
+    # SORA 2 (если доступен)
+    if FeatureFlags.has_sora2():
+        keyboard.append([btn("🔸 SORA 2", Actions.VIDEO_SORA2)])
+    else:
+        keyboard.append([btn("⚠️ SORA 2 недоступен (нет OpenAI ключа)", "disabled_sora2")])
+    
+    keyboard.append([btn(t("btn.back", lang), Actions.HOME)])
+    
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+def build_helper_menu(lang: str = "ru") -> InlineKeyboardMarkup:
+    """Меню умного помощника - выбор модели"""
+    from app.core.features import FeatureFlags
+    
+    keyboard = []
+    
+    # VEO 3 (если доступен)
+    if FeatureFlags.has_veo3():
+        keyboard.append([btn("🔵 VEO 3", Actions.HELPER_VEO3)])
+    else:
+        keyboard.append([btn("⚠️ VEO 3 недоступен (нет GCP ключа)", "disabled_veo3")])
+    
+    # SORA 2 (если доступен)
+    if FeatureFlags.has_sora2():
+        keyboard.append([btn("🔸 SORA 2", Actions.HELPER_SORA2)])
+    else:
+        keyboard.append([btn("⚠️ SORA 2 недоступен (нет OpenAI ключа)", "disabled_sora2")])
+    
+    keyboard.append([btn(t("btn.back", lang), Actions.HOME)])
+    
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+def build_neurokudo_menu(lang: str = "ru") -> InlineKeyboardMarkup:
+    """Меню Neurokudo режима - выбор модели"""
+    from app.core.features import FeatureFlags
+    
+    keyboard = []
+    
+    # VEO 3 (если доступен)
+    if FeatureFlags.has_veo3():
+        keyboard.append([btn("🔵 VEO 3", Actions.NEUROKUDO_VEO3)])
+    else:
+        keyboard.append([btn("⚠️ VEO 3 недоступен (нет GCP ключа)", "disabled_veo3")])
+    
+    # SORA 2 (если доступен)
+    if FeatureFlags.has_sora2():
+        keyboard.append([btn("🔸 SORA 2", Actions.NEUROKUDO_SORA2)])
+    else:
+        keyboard.append([btn("⚠️ SORA 2 недоступен (нет OpenAI ключа)", "disabled_sora2")])
+    
+    keyboard.append([btn(t("btn.back", lang), Actions.HOME)])
+    
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+def build_meme_menu(lang: str = "ru") -> InlineKeyboardMarkup:
+    """Меню мемного режима - выбор модели"""
+    from app.core.features import FeatureFlags
+    
+    keyboard = []
+    
+    # VEO 3 (если доступен)
+    if FeatureFlags.has_veo3():
+        keyboard.append([btn("🔵 VEO 3", Actions.MEME_VEO3)])
+    else:
+        keyboard.append([btn("⚠️ VEO 3 недоступен (нет GCP ключа)", "disabled_veo3")])
+    
+    # SORA 2 (если доступен)
+    if FeatureFlags.has_sora2():
+        keyboard.append([btn("🔸 SORA 2", Actions.MEME_SORA2)])
+    else:
+        keyboard.append([btn("⚠️ SORA 2 недоступен (нет OpenAI ключа)", "disabled_sora2")])
     
     keyboard.append([btn(t("btn.back", lang), Actions.HOME)])
     
@@ -267,4 +340,8 @@ def build_help_menu(lang: str = "ru") -> InlineKeyboardMarkup:
         [btn("🏠 Главное меню", "home")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+def build_video_menu(lang: str = "ru") -> InlineKeyboardMarkup:
+    """Меню выбора видео модели (старая функция для совместимости)"""
+    return build_create_video_menu(lang)
 

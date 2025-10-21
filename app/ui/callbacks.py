@@ -78,14 +78,33 @@ class Actions:
     # Выбор языка
     SET_LANGUAGE = "set_language"
     
-    # Главное меню
-    MENU_GENERATE = "menu_generate"
+    # Главное меню (плоская структура)
+    MENU_CREATE_VIDEO = "menu_create_video"
+    MENU_HELPER = "menu_helper"
+    MENU_NEUROKUDO = "menu_neurokudo"
+    MENU_MEME = "menu_meme"
     MENU_LEGO = "menu_lego"
     MENU_PHOTO = "menu_photo"
     MENU_TRYON = "menu_tryon"
-    MENU_PROFILE = "menu_profile"
     MENU_TARIFFS = "menu_tariffs"
+    MENU_PROFILE = "menu_profile"
     MENU_HELP = "menu_help"
+    
+    # Режимы создания видео
+    VIDEO_VEO3 = "video_veo3"
+    VIDEO_SORA2 = "video_sora2"
+    
+    # Режимы умного помощника
+    HELPER_VEO3 = "helper_veo3"
+    HELPER_SORA2 = "helper_sora2"
+    
+    # Режимы Neurokudo
+    NEUROKUDO_VEO3 = "neurokudo_veo3"
+    NEUROKUDO_SORA2 = "neurokudo_sora2"
+    
+    # Режимы мемов
+    MEME_VEO3 = "meme_veo3"
+    MEME_SORA2 = "meme_sora2"
     
     # LEGO режим
     LEGO_SINGLE = "lego_single"

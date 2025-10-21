@@ -126,25 +126,25 @@ async def handle_mode_meme(callback: CallbackQuery):
         reply_markup=build_main_menu()
     )
 
-async def handle_text_input(message: Message):
+async def handle_text_input(message: Message, custom_prompt: str = None):
     """Обработка текстового ввода от пользователя"""
     user_id = message.from_user.id
     state = get_user_state(user_id)
     
-    if not state.waiting_for:
+    if not state.waiting_for and not custom_prompt:
         return
     
-    if state.waiting_for == "prompt_input":
-        await process_prompt_input(message, state)
+    if state.waiting_for == "prompt_input" or custom_prompt:
+        prompt = custom_prompt or message.text.strip()
+        await process_prompt_input(message, state, prompt)
     
     state.waiting_for = None
 
-async def process_prompt_input(message: Message, state):
+async def process_prompt_input(message: Message, state, prompt: str):
     """Обработка промпта от пользователя"""
     user_id = message.from_user.id
-    user_input = message.text.strip()
     
-    if len(user_input) > MAX_PROMPT_LENGTH:
+    if len(prompt) > MAX_PROMPT_LENGTH:
         await message.answer(
             t("error.invalid_prompt"),
             reply_markup=build_main_menu()
@@ -157,7 +157,7 @@ async def process_prompt_input(message: Message, state):
         status_msg = await message.answer(t("helper.thinking"))
         
         try:
-            improved_prompt = await improve_prompt_async(user_input, mode="helper")
+            improved_prompt = await improve_prompt_async(prompt, mode="helper")
             state.last_prompt = improved_prompt
             
             await status_msg.delete()
@@ -177,7 +177,7 @@ async def process_prompt_input(message: Message, state):
         status_msg = await message.answer(t("meme.generating"))
         
         try:
-            meme_prompt = await improve_prompt_async(user_input, mode="meme")
+            meme_prompt = await improve_prompt_async(prompt, mode="meme")
             state.last_prompt = meme_prompt
             
             # Для мемов используем быстрые настройки: 6 сек, 9:16, без звука
@@ -199,8 +199,8 @@ async def process_prompt_input(message: Message, state):
     
     elif state.video_mode == "manual":
         # Используем промпт как есть
-        state.last_prompt = user_input
-        await ask_orientation(message, state, user_input)
+        state.last_prompt = prompt
+        await ask_orientation(message, state, prompt)
 
 async def ask_orientation(message: Message, state, prompt: str):
     """Запрос ориентации видео"""

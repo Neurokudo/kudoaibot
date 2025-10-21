@@ -39,49 +39,34 @@ def register_callbacks():
     # Выбор языка
     dp.callback_query.register(callback_set_language, F.data.startswith("set_language"))
     
-    # Регистрируем все callback обработчики
+    # Главное меню (плоская структура)
     dp.callback_query.register(callback_home, F.data == "home")
-    dp.callback_query.register(callback_generate, F.data == "menu_generate")
+    dp.callback_query.register(callback_create_video, F.data == "menu_create_video")
+    dp.callback_query.register(callback_helper_menu, F.data == "menu_helper")
+    dp.callback_query.register(callback_neurokudo_menu, F.data == "menu_neurokudo")
+    dp.callback_query.register(callback_meme_menu, F.data == "menu_meme")
     dp.callback_query.register(callback_lego, F.data == "menu_lego")
     dp.callback_query.register(callback_photo, F.data == "menu_photo")
     dp.callback_query.register(callback_tryon, F.data == "menu_tryon")
     dp.callback_query.register(callback_profile, F.data == "menu_profile")
+    dp.callback_query.register(callback_tariffs, F.data == "menu_tariffs")
+    dp.callback_query.register(callback_help, F.data == "menu_help")
     
-    # Режимы генерации
-    dp.callback_query.register(callback_mode_helper, F.data == Actions.MODE_HELPER)
-    dp.callback_query.register(callback_mode_manual, F.data == Actions.MODE_MANUAL)
-    dp.callback_query.register(callback_mode_meme, F.data == Actions.MODE_MEME)
+    # Режимы создания видео
+    dp.callback_query.register(callback_video_veo3, F.data == "video_veo3")
+    dp.callback_query.register(callback_video_sora2, F.data == "video_sora2")
     
-    # LEGO режим
-    dp.callback_query.register(callback_lego_single, F.data == Actions.LEGO_SINGLE)
-    dp.callback_query.register(callback_lego_reportage, F.data == Actions.LEGO_REPORTAGE)
-    dp.callback_query.register(callback_lego_regenerate, F.data == Actions.LEGO_REGENERATE)
-    dp.callback_query.register(callback_lego_improve, F.data == Actions.LEGO_IMPROVE)
-    dp.callback_query.register(callback_lego_embed_replica, F.data == Actions.LEGO_EMBED_REPLICA)
+    # Режимы умного помощника
+    dp.callback_query.register(callback_helper_veo3, F.data == "helper_veo3")
+    dp.callback_query.register(callback_helper_sora2, F.data == "helper_sora2")
     
-    # Параметры видео
-    dp.callback_query.register(callback_orientation_portrait, F.data == Actions.ORIENTATION_PORTRAIT)
-    dp.callback_query.register(callback_orientation_landscape, F.data == Actions.ORIENTATION_LANDSCAPE)
-    dp.callback_query.register(callback_audio_yes, F.data == Actions.AUDIO_YES)
-    dp.callback_query.register(callback_audio_no, F.data == Actions.AUDIO_NO)
+    # Режимы Neurokudo
+    dp.callback_query.register(callback_neurokudo_veo3, F.data == "neurokudo_veo3")
+    dp.callback_query.register(callback_neurokudo_sora2, F.data == "neurokudo_sora2")
     
-    # После генерации
-    dp.callback_query.register(callback_video_regenerate, F.data == Actions.VIDEO_REGENERATE)
-    dp.callback_query.register(callback_video_to_helper, F.data == Actions.VIDEO_TO_HELPER)
-    
-    # Покупка монеток
-    dp.callback_query.register(callback_show_topup, F.data == "show_topup")
-    
-    # Тарифы
-    dp.callback_query.register(callback_show_tariffs, F.data == "menu_tariffs")
-    
-    # Помощь
-    dp.callback_query.register(callback_show_help, F.data == "menu_help")
-    
-    # Новые упрощенные разделы
-    dp.callback_query.register(callback_show_subscriptions, F.data == "subscriptions")
-    dp.callback_query.register(callback_show_permanent_coins, F.data == "permanent_coins")
-    dp.callback_query.register(callback_show_models_cost, F.data == "models_cost")
+    # Режимы мемов
+    dp.callback_query.register(callback_meme_veo3, F.data == "meme_veo3")
+    dp.callback_query.register(callback_meme_sora2, F.data == "meme_sora2")
     
     # Обработчики покупки
     dp.callback_query.register(callback_show_plans, F.data == "show_plans")
@@ -635,4 +620,202 @@ async def callback_lego_embed_replica(callback: CallbackQuery):
     await callback.answer()
     # TODO: Реализовать LEGO встраивание реплики
     await callback.message.edit_text("📝 Встраиваю реплику в LEGO видео...")
+
+# === НОВЫЕ ОБРАБОТЧИКИ ДЛЯ ПЛОСКОЙ СТРУКТУРЫ ===
+
+async def callback_create_video(callback: CallbackQuery):
+    """Обработчик меню быстрого создания видео"""
+    await callback.answer()
+    from app.ui.keyboards import build_create_video_menu
+    from app.ui.texts import t
+    
+    await callback.message.edit_text(
+        t("menu.create_video"),
+        reply_markup=build_create_video_menu()
+    )
+
+async def callback_helper_menu(callback: CallbackQuery):
+    """Обработчик меню умного помощника"""
+    await callback.answer()
+    from app.ui.keyboards import build_helper_menu
+    from app.ui.texts import t
+    
+    await callback.message.edit_text(
+        t("menu.helper"),
+        reply_markup=build_helper_menu()
+    )
+
+async def callback_neurokudo_menu(callback: CallbackQuery):
+    """Обработчик меню Neurokudo режима"""
+    await callback.answer()
+    from app.ui.keyboards import build_neurokudo_menu
+    from app.ui.texts import t
+    
+    await callback.message.edit_text(
+        t("menu.neurokudo"),
+        reply_markup=build_neurokudo_menu()
+    )
+
+async def callback_meme_menu(callback: CallbackQuery):
+    """Обработчик меню мемного режима"""
+    await callback.answer()
+    from app.ui.keyboards import build_meme_menu
+    from app.ui.texts import t
+    
+    await callback.message.edit_text(
+        t("menu.meme"),
+        reply_markup=build_meme_menu()
+    )
+
+# === ОБРАБОТЧИКИ РЕЖИМОВ СОЗДАНИЯ ВИДЕО ===
+
+async def callback_video_veo3(callback: CallbackQuery):
+    """Быстрое создание видео VEO 3"""
+    await callback.answer()
+    from app.handlers.states import set_user_state
+    
+    user_id = callback.from_user.id
+    set_user_state(user_id, {
+        "mode": "manual",
+        "model": "veo3",
+        "awaiting_prompt": True
+    })
+    
+    await callback.message.edit_text(
+        "🎬 **Быстрое создание видео VEO 3**\n\n"
+        "Напишите описание сцены для генерации видео.\n"
+        "Пример: \"Бабушка кормит кур во дворе\""
+    )
+
+async def callback_video_sora2(callback: CallbackQuery):
+    """Быстрое создание видео SORA 2"""
+    await callback.answer()
+    from app.handlers.states import set_user_state
+    
+    user_id = callback.from_user.id
+    set_user_state(user_id, {
+        "mode": "manual",
+        "model": "sora2",
+        "awaiting_prompt": True
+    })
+    
+    await callback.message.edit_text(
+        "🎬 **Быстрое создание видео SORA 2**\n\n"
+        "Напишите описание сцены для генерации видео.\n"
+        "Пример: \"Бабушка кормит кур во дворе\""
+    )
+
+# === ОБРАБОТЧИКИ РЕЖИМОВ УМНОГО ПОМОЩНИКА ===
+
+async def callback_helper_veo3(callback: CallbackQuery):
+    """Умный помощник VEO 3"""
+    await callback.answer()
+    from app.handlers.states import set_user_state
+    
+    user_id = callback.from_user.id
+    set_user_state(user_id, {
+        "mode": "helper",
+        "model": "veo3",
+        "awaiting_prompt": True
+    })
+    
+    await callback.message.edit_text(
+        "🧠 **Умный помощник VEO 3**\n\n"
+        "Напишите идею для видео. GPT улучшит ваш промпт и создаст качественное видео.\n"
+        "Пример: \"Бабушка с животными\""
+    )
+
+async def callback_helper_sora2(callback: CallbackQuery):
+    """Умный помощник SORA 2"""
+    await callback.answer()
+    from app.handlers.states import set_user_state
+    
+    user_id = callback.from_user.id
+    set_user_state(user_id, {
+        "mode": "helper",
+        "model": "sora2",
+        "awaiting_prompt": True
+    })
+    
+    await callback.message.edit_text(
+        "🧠 **Умный помощник SORA 2**\n\n"
+        "Напишите идею для видео. GPT улучшит ваш промпт и создаст качественное видео.\n"
+        "Пример: \"Бабушка с животными\""
+    )
+
+# === ОБРАБОТЧИКИ РЕЖИМОВ NEUROKUDO ===
+
+async def callback_neurokudo_veo3(callback: CallbackQuery):
+    """Neurokudo режим VEO 3"""
+    await callback.answer()
+    from app.handlers.states import set_user_state
+    
+    user_id = callback.from_user.id
+    set_user_state(user_id, {
+        "mode": "neurokudo",
+        "model": "veo3",
+        "awaiting_prompt": True
+    })
+    
+    await callback.message.edit_text(
+        "🔮 **Как у Neurokudo VEO 3**\n\n"
+        "Специальный режим с бабушкой и абсурдными ситуациями.\n"
+        "Напишите идею: \"Бабушка с динозаврами\""
+    )
+
+async def callback_neurokudo_sora2(callback: CallbackQuery):
+    """Neurokudo режим SORA 2"""
+    await callback.answer()
+    from app.handlers.states import set_user_state
+    
+    user_id = callback.from_user.id
+    set_user_state(user_id, {
+        "mode": "neurokudo",
+        "model": "sora2",
+        "awaiting_prompt": True
+    })
+    
+    await callback.message.edit_text(
+        "🔮 **Как у Neurokudo SORA 2**\n\n"
+        "Специальный режим с бабушкой и абсурдными ситуациями.\n"
+        "Напишите идею: \"Бабушка с динозаврами\""
+    )
+
+# === ОБРАБОТЧИКИ РЕЖИМОВ МЕМОВ ===
+
+async def callback_meme_veo3(callback: CallbackQuery):
+    """Мемный режим VEO 3"""
+    await callback.answer()
+    from app.handlers.states import set_user_state
+    
+    user_id = callback.from_user.id
+    set_user_state(user_id, {
+        "mode": "meme",
+        "model": "veo3",
+        "awaiting_prompt": True
+    })
+    
+    await callback.message.edit_text(
+        "🤡 **Мемный режим VEO 3**\n\n"
+        "Быстрая генерация смешных сцен.\n"
+        "Напишите идею или нажмите кнопку для случайной сцены."
+    )
+
+async def callback_meme_sora2(callback: CallbackQuery):
+    """Мемный режим SORA 2"""
+    await callback.answer()
+    from app.handlers.states import set_user_state
+    
+    user_id = callback.from_user.id
+    set_user_state(user_id, {
+        "mode": "meme",
+        "model": "sora2",
+        "awaiting_prompt": True
+    })
+    
+    await callback.message.edit_text(
+        "🤡 **Мемный режим SORA 2**\n\n"
+        "Быстрая генерация смешных сцен.\n"
+        "Напишите идею или нажмите кнопку для случайной сцены."
+    )
 

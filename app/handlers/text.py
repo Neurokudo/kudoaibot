@@ -42,14 +42,75 @@ async def handle_photo_message(message: Message):
         await cmd_start(message)
 
 async def handle_text_message(message: Message):
-    """Обработка текстовых сообщений"""
+    """Обработка текстовых сообщений с учетом режимов"""
     user_id = message.from_user.id
+    text = message.text.strip()
     
     # Проверяем, ждёт ли бот ввода от этого пользователя
     if is_waiting_for_input(user_id):
         await handle_text_input(message)
+        return
+    
+    # Проверяем состояние пользователя для новых режимов
+    from app.handlers.states import get_user_state, set_user_state
+    state = get_user_state(user_id)
+    
+    # Если пользователь ожидает промпт в новом режиме
+    if state.get("awaiting_prompt"):
+        mode = state.get("mode", "manual")
+        model = state.get("model", "veo3")
+        
+        # Обрабатываем промпт в зависимости от режима
+        if mode == "helper":
+            # Умный помощник - улучшаем промпт через GPT
+            from app.services.gpt_templates import improve_scene
+            improved_prompt = improve_scene(text, "complex")
+            await message.reply_text(
+                f"🧠 **Улучшенный промпт:**\n\n{improved_prompt}\n\n"
+                f"Генерирую видео..."
+            )
+            # Используем улучшенный промпт для генерации
+            await handle_text_input(message, improved_prompt)
+            
+        elif mode == "neurokudo":
+            # Neurokudo режим - специальная обработка
+            from app.services.gpt_templates import improve_scene
+            improved_prompt = improve_scene(text, "absurd")
+            await message.reply_text(
+                f"🔮 **Neurokudo промпт:**\n\n{improved_prompt}\n\n"
+                f"Генерирую видео в стиле Neurokudo..."
+            )
+            await handle_text_input(message, improved_prompt)
+            
+        elif mode == "meme":
+            # Мемный режим - быстрая генерация
+            from app.services.gpt_templates import random_meme_scene, improve_scene
+            if text.lower() in ["случайно", "случайная", "random", "мем"]:
+                meme_prompt = random_meme_scene()
+                await message.reply_text(
+                    f"🤡 **Случайная мемная сцена:**\n\n{meme_prompt}\n\n"
+                    f"Генерирую мем..."
+                )
+                await handle_text_input(message, meme_prompt)
+            else:
+                # Улучшаем пользовательский промпт для мемов
+                meme_prompt = improve_scene(text, "absurd")
+                await message.reply_text(
+                    f"🤡 **Мемный промпт:**\n\n{meme_prompt}\n\n"
+                    f"Генерирую мем..."
+                )
+                await handle_text_input(message, meme_prompt)
+                
+        elif mode == "manual":
+            # Ручной режим - прямая генерация
+            await message.reply_text("🎬 Генерирую видео...")
+            await handle_text_input(message, text)
+        
+        # Сбрасываем состояние
+        set_user_state(user_id, {})
+        
     else:
-        # Если не ждём ввода, показываем меню
+        # Обычное сообщение - показываем главное меню
         await cmd_start(message)
 
 async def handle_fallback_message(message: Message):

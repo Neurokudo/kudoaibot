@@ -44,7 +44,7 @@ def register_callbacks():
     dp.callback_query.register(callback_photo, F.data == "menu_photo")
     dp.callback_query.register(callback_tryon, F.data == "menu_tryon")
     dp.callback_query.register(callback_profile, F.data == "menu_profile")
-    dp.callback_query.register(callback_tariffs, F.data == "menu_tariffs")
+    dp.callback_query.register(callback_show_tariffs, F.data == "menu_tariffs")
     dp.callback_query.register(callback_help, F.data == "menu_help")
     
     # Режимы создания видео

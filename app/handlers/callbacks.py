@@ -72,7 +72,6 @@ def register_callbacks():
     # Новые упрощенные разделы
     dp.callback_query.register(callback_show_subscriptions, F.data == "subscriptions")
     dp.callback_query.register(callback_show_permanent_coins, F.data == "permanent_coins")
-    dp.callback_query.register(callback_show_coin_explanation, F.data == "coin_explanation")
     dp.callback_query.register(callback_show_models_cost, F.data == "models_cost")
     
     # Обработчики покупки

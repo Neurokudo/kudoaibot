@@ -81,6 +81,7 @@ class Actions:
     MENU_TRYON = "menu_tryon"
     MENU_PROFILE = "menu_profile"
     MENU_TARIFFS = "menu_tariffs"
+    MENU_HELP = "menu_help"
     
     # Раздел ВИДЕО
     VIDEO_SORA2 = "video_sora2"
@@ -113,6 +114,11 @@ class Actions:
     # Платежи
     PAYMENT_PLANS = "show_plans"
     PAYMENT_TOPUP = "show_topup"
+    
+    # Новые действия для упрощенного интерфейса
+    SUBSCRIPTIONS = "subscriptions"
+    PERMANENT_COINS = "permanent_coins"
+    COIN_EXPLANATION = "coin_explanation"
     
     # Дополнительно
     VIDEO_REGENERATE = "video_regenerate"

@@ -82,9 +82,13 @@ async def cmd_start(message: Message):
     days_left = status.get('days_left', 0) if status.get('has_active') else None
     
     welcome_text = f"👋 Привет, {name}!\n\n"
-    welcome_text += "🤖 <b>KudoAiBot</b> - твой AI помощник\n\n"
-    welcome_text += format_balance_display(balance, days_left) + "\n\n"
-    welcome_text += "Выбери раздел:"
+    welcome_text += f"💰 Баланс: <b>{balance_info['total']}</b> монет\n"
+    welcome_text += f"🎯 Осталось: ~{balance_info['total'] // 5} видео\n\n"
+    welcome_text += f"🎬 <b>Что ты можешь сделать:</b>\n"
+    welcome_text += f"— Создавать видео с помощью ИИ\n"
+    welcome_text += f"— Редактировать фото\n"
+    welcome_text += f"— Использовать виртуальную примерочную\n\n"
+    welcome_text += f"Выбери раздел ниже 👇"
     
     await message.answer(
         welcome_text,

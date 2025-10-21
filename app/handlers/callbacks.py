@@ -31,13 +31,13 @@ def register_callbacks():
     bot, dp = get_bot()
     
     # Регистрируем все callback обработчики
-    dp.callback_query.register(callback_home, F.data == Actions.HOME)
-    dp.callback_query.register(callback_video, F.data == Actions.MENU_VIDEO)
-    dp.callback_query.register(callback_veo3, F.data == Actions.VIDEO_VEO3)
-    dp.callback_query.register(callback_sora2, F.data == Actions.VIDEO_SORA2)
-    dp.callback_query.register(callback_photo, F.data == Actions.MENU_PHOTO)
-    dp.callback_query.register(callback_tryon, F.data == Actions.MENU_TRYON)
-    dp.callback_query.register(callback_profile, F.data == Actions.MENU_PROFILE)
+    dp.callback_query.register(callback_home, F.data == "home")
+    dp.callback_query.register(callback_video, F.data == "menu_video")
+    dp.callback_query.register(callback_veo3, F.data == "video_veo3")
+    dp.callback_query.register(callback_sora2, F.data == "video_sora2")
+    dp.callback_query.register(callback_photo, F.data == "menu_photo")
+    dp.callback_query.register(callback_tryon, F.data == "menu_tryon")
+    dp.callback_query.register(callback_profile, F.data == "menu_profile")
     
     # Режимы генерации
     dp.callback_query.register(callback_mode_helper, F.data == Actions.MODE_HELPER)
@@ -55,18 +55,18 @@ def register_callbacks():
     dp.callback_query.register(callback_video_to_helper, F.data == Actions.VIDEO_TO_HELPER)
     
     # Покупка монеток
-    dp.callback_query.register(callback_show_topup, F.data == Actions.PAYMENT_TOPUP)
+    dp.callback_query.register(callback_show_topup, F.data == "show_topup")
     
     # Тарифы
-    dp.callback_query.register(callback_show_tariffs, F.data == Actions.MENU_TARIFFS)
+    dp.callback_query.register(callback_show_tariffs, F.data == "menu_tariffs")
     
     # Помощь
-    dp.callback_query.register(callback_show_help, F.data == Actions.MENU_HELP)
+    dp.callback_query.register(callback_show_help, F.data == "menu_help")
     
     # Новые упрощенные разделы
-    dp.callback_query.register(callback_show_subscriptions, F.data == Actions.SUBSCRIPTIONS)
-    dp.callback_query.register(callback_show_permanent_coins, F.data == Actions.PERMANENT_COINS)
-    dp.callback_query.register(callback_show_coin_explanation, F.data == Actions.COIN_EXPLANATION)
+    dp.callback_query.register(callback_show_subscriptions, F.data == "subscriptions")
+    dp.callback_query.register(callback_show_permanent_coins, F.data == "permanent_coins")
+    dp.callback_query.register(callback_show_coin_explanation, F.data == "coin_explanation")
     
     # Fallback для необработанных callback'ов (должен быть последним!)
     dp.callback_query.register(callback_fallback)
@@ -303,9 +303,9 @@ async def callback_show_subscriptions(callback: CallbackQuery):
     subscriptions_text += "🎬 25 HQ-видео в 4K"
     
     keyboard = [
-        [btn("💰 Купить подписку", Actions.PAYMENT_PLANS)],
-        [btn("📘 Подробнее о монетках", Actions.COIN_EXPLANATION)],
-        [btn("🔙 Назад", Actions.MENU_TARIFFS)]
+        [btn("💰 Купить подписку", "show_plans")],
+        [btn("📘 Подробнее о монетках", "coin_explanation")],
+        [btn("🔙 Назад", "menu_tariffs")]
     ]
     
     await callback.message.edit_text(
@@ -327,9 +327,9 @@ async def callback_show_permanent_coins(callback: CallbackQuery):
     coins_text += "🟣 <b>575 монет</b> — 7 490 ₽"
     
     keyboard = [
-        [btn("💳 Пополнить", Actions.PAYMENT_TOPUP)],
-        [btn("ℹ️ Как считаются монетки", Actions.COIN_EXPLANATION)],
-        [btn("🔙 Назад", Actions.MENU_TARIFFS)]
+        [btn("💳 Пополнить", "show_topup")],
+        [btn("ℹ️ Как считаются монетки", "coin_explanation")],
+        [btn("🔙 Назад", "menu_tariffs")]
     ]
     
     await callback.message.edit_text(
@@ -353,8 +353,8 @@ async def callback_show_coin_explanation(callback: CallbackQuery):
     explanation_text += "Значит, у тебя останется 30 монет из 60."
     
     keyboard = [
-        [btn("📊 Тарифы", Actions.MENU_TARIFFS)],
-        [btn("🏠 Главное меню", Actions.HOME)]
+        [btn("📊 Тарифы", "menu_tariffs")],
+        [btn("🏠 Главное меню", "home")]
     ]
     
     await callback.message.edit_text(

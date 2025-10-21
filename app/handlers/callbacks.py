@@ -8,7 +8,7 @@ from aiogram.types import CallbackQuery, InlineKeyboardMarkup
 from app.db import users
 from app.services import billing
 from app.ui import Actions, t
-from app.ui.keyboards import build_main_menu, tariff_selection, topup_packs_menu, build_profile_menu, build_tariffs_menu, build_help_menu
+from app.ui.keyboards import build_main_menu, tariff_selection, topup_packs_menu, build_profile_menu, build_tariffs_menu, build_help_menu, btn
 from app.core.bot import get_bot
 from .commands import ensure_user_exists, get_user_language, get_user_data
 from .video_handlers import (
@@ -22,6 +22,12 @@ from .video_handlers import (
     handle_audio_choice,
     handle_video_regenerate,
     handle_video_to_helper
+)
+from .tryon_handlers import (
+    callback_tryon_start,
+    callback_tryon_confirm,
+    callback_tryon_swap,
+    callback_tryon_reset
 )
 
 log = logging.getLogger("kudoaibot")
@@ -74,16 +80,11 @@ def register_callbacks():
     dp.callback_query.register(callback_buy_tariff, F.data.startswith("buy_tariff_"))
     dp.callback_query.register(callback_buy_topup, F.data.startswith("buy_topup_"))
     
-    # Обработчики фото
-    dp.callback_query.register(callback_photo_enhance, F.data == "photo_enhance")
-    dp.callback_query.register(callback_photo_remove_bg, F.data == "photo_remove_bg")
-    dp.callback_query.register(callback_photo_retouch, F.data == "photo_retouch")
-    dp.callback_query.register(callback_photo_style, F.data == "photo_style")
-    
     # Обработчики примерочной
-    dp.callback_query.register(callback_tryon_basic, F.data == "tryon_basic")
-    dp.callback_query.register(callback_tryon_fashion, F.data == "tryon_fashion")
-    dp.callback_query.register(callback_tryon_pro, F.data == "tryon_pro")
+    dp.callback_query.register(callback_tryon_start, F.data == "tryon_start")
+    dp.callback_query.register(callback_tryon_confirm, F.data == "tryon_confirm")
+    dp.callback_query.register(callback_tryon_swap, F.data == "tryon_swap")
+    dp.callback_query.register(callback_tryon_reset, F.data == "tryon_reset")
     
     # Fallback для необработанных callback'ов (должен быть последним!)
     dp.callback_query.register(callback_fallback)
@@ -135,23 +136,20 @@ async def callback_sora2(callback: CallbackQuery):
 
 # @dp.callback_query(F.data == Actions.MENU_PHOTO)
 async def callback_photo(callback: CallbackQuery):
-    """Раздел ФОТО"""
+    """Раздел ФОТО - временная заглушка"""
     await callback.answer()
     user_language = await get_user_language(callback.from_user.id)
     
     photo_text = "🪄 <b>Редактирование фото</b>\n\n"
-    photo_text += "Выберите функцию:\n\n"
-    photo_text += "🪄 <b>Gemini Enhance</b> — улучшение качества\n"
-    photo_text += "🪄 <b>Gemini Remove BG</b> — удаление фона\n"
-    photo_text += "🪄 <b>Gemini Retouch</b> — ретушь\n"
-    photo_text += "🪄 <b>Gemini Style</b> — изменение стиля\n\n"
-    photo_text += "💸 <b>Стоимость:</b> 4 монетки за операцию"
+    photo_text += "⚠️ <b>Раздел находится в разработке</b>\n\n"
+    photo_text += "Скоро здесь будут доступны:\n"
+    photo_text += "• Улучшение качества\n"
+    photo_text += "• Удаление фона\n"
+    photo_text += "• Ретушь\n"
+    photo_text += "• Изменение стиля\n\n"
+    photo_text += "А пока используйте 🎬 Видео и 👗 Примерочную!"
     
     keyboard = [
-        [btn("🪄 Enhance — 4 монетки", "photo_enhance")],
-        [btn("🪄 Remove BG — 4 монетки", "photo_remove_bg")],
-        [btn("🪄 Retouch — 4 монетки", "photo_retouch")],
-        [btn("🪄 Style — 4 монетки", "photo_style")],
         [btn("⬅️ Назад", "home")],
         [btn("🏠 Главное меню", "home")]
     ]
@@ -163,21 +161,37 @@ async def callback_photo(callback: CallbackQuery):
 
 # @dp.callback_query(F.data == Actions.MENU_TRYON)
 async def callback_tryon(callback: CallbackQuery):
-    """Раздел ПРИМЕРОЧНАЯ"""
+    """Раздел ПРИМЕРОЧНАЯ - старт"""
     await callback.answer()
-    user_language = await get_user_language(callback.from_user.id)
+    user_id = callback.from_user.id
+    user_language = await get_user_language(user_id)
+    
+    # Инициализируем состояние примерочной
+    from app.handlers.states import get_user_state, set_user_state
+    state = get_user_state(user_id)
+    
+    # Сбрасываем предыдущее состояние примерочной
+    state.tryon_data = {
+        "person": None,
+        "garment": None,
+        "dressed": None,
+        "stage": "await_person"
+    }
+    set_user_state(user_id, state)
     
     tryon_text = "👗 <b>Виртуальная примерочная</b>\n\n"
-    tryon_text += "Выберите тип примерки:\n\n"
-    tryon_text += "👗 <b>Imagen Try-On</b> — базовая примерка (1 образ)\n"
-    tryon_text += "👗 <b>Imagen Fashion</b> — стильная примерка\n"
-    tryon_text += "👗 <b>Imagen Pro</b> — профессиональная примерка (3 образа)\n\n"
-    tryon_text += "💸 <b>Стоимость:</b> от 6 до 15 монет"
+    tryon_text += "Давайте примерим одежду виртуально!\n\n"
+    tryon_text += "📸 <b>Шаг 1:</b> Отправьте фото человека\n"
+    tryon_text += "👕 <b>Шаг 2:</b> Отправьте фото одежды\n"
+    tryon_text += "✨ <b>Шаг 3:</b> Получите результат!\n\n"
+    tryon_text += "💸 <b>Стоимость:</b> 6 монет за примерку\n\n"
+    tryon_text += "⚠️ Для лучшего результата:\n"
+    tryon_text += "• Используйте портретные фото\n"
+    tryon_text += "• Фото должно быть четким\n"
+    tryon_text += "• Одежда на белом фоне работает лучше"
     
     keyboard = [
-        [btn("👗 Try-On — 6 монет", "tryon_basic")],
-        [btn("👗 Fashion — 10 монет", "tryon_fashion")],
-        [btn("👗 Pro — 15 монет", "tryon_pro")],
+        [btn("📸 Начать примерку", "tryon_start")],
         [btn("⬅️ Назад", "home")],
         [btn("🏠 Главное меню", "home")]
     ]
@@ -541,360 +555,6 @@ async def callback_buy_topup(callback: CallbackQuery):
         [btn("⬅️ Назад", "permanent_coins")],
         [btn("🏠 Главное меню", "home")]
     ]
-    
-    await callback.message.edit_text(
-        payment_text,
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard)
-    )
-
-# === ОБРАБОТЧИКИ ФОТО ===
-
-async def callback_photo_enhance(callback: CallbackQuery):
-    """Обработка фото Enhance"""
-    await callback.answer()
-    user_id = callback.from_user.id
-    
-    # Проверяем доступ и списываем монетки
-    from app.services import billing
-    
-    access = await billing.check_access(user_id, "photo_enhance")
-    if not access['access']:
-        await callback.message.edit_text(
-            f"❌ Недостаточно монеток!\n\n"
-            f"💰 Нужно: {access.get('cost', 4)} монет\n"
-            f"💳 У вас: {access.get('balance', 0)} монет\n\n"
-            f"Пополните баланс в профиле.",
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [btn("💳 Пополнить", "show_topup")],
-                [btn("🏠 Главное меню", "home")]
-            ])
-        )
-        return
-    
-    # Списываем монетки
-    deduct_result = await billing.deduct_coins_for_feature(user_id, "photo_enhance")
-    
-    if not deduct_result['success']:
-        await callback.message.edit_text(
-            deduct_result['message'],
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [btn("🏠 Главное меню", "home")]
-            ])
-        )
-        return
-    
-    # Показываем информацию о списании и просим фото
-    deduction_info = (
-        f"💰 <b>Списано:</b> {deduct_result['coins_spent']} монет\n"
-        f"💳 <b>Остаток:</b> {deduct_result['balance_after']} монет\n\n"
-    )
-    
-    await callback.message.edit_text(
-        f"🪄 <b>Gemini Enhance</b>\n\n"
-        f"{deduction_info}"
-        f"📸 <b>Отправьте фото для улучшения качества</b>\n\n"
-        f"⚠️ Поддерживаются форматы: JPG, PNG\n"
-        f"📏 Максимальный размер: 10 МБ",
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [btn("🏠 Главное меню", "home")]
-        ])
-    )
-
-async def callback_photo_remove_bg(callback: CallbackQuery):
-    """Обработка фото Remove BG"""
-    await callback.answer()
-    user_id = callback.from_user.id
-    
-    from app.services import billing
-    
-    access = await billing.check_access(user_id, "photo_remove_bg")
-    if not access['access']:
-        await callback.message.edit_text(
-            f"❌ Недостаточно монеток!\n\n"
-            f"💰 Нужно: {access.get('cost', 4)} монет\n"
-            f"💳 У вас: {access.get('balance', 0)} монет\n\n"
-            f"Пополните баланс в профиле.",
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [btn("💳 Пополнить", "show_topup")],
-                [btn("🏠 Главное меню", "home")]
-            ])
-        )
-        return
-    
-    deduct_result = await billing.deduct_coins_for_feature(user_id, "photo_remove_bg")
-    
-    if not deduct_result['success']:
-        await callback.message.edit_text(
-            deduct_result['message'],
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [btn("🏠 Главное меню", "home")]
-            ])
-        )
-        return
-    
-    deduction_info = (
-        f"💰 <b>Списано:</b> {deduct_result['coins_spent']} монет\n"
-        f"💳 <b>Остаток:</b> {deduct_result['balance_after']} монет\n\n"
-    )
-    
-    await callback.message.edit_text(
-        f"🪄 <b>Gemini Remove BG</b>\n\n"
-        f"{deduction_info}"
-        f"📸 <b>Отправьте фото для удаления фона</b>\n\n"
-        f"⚠️ Поддерживаются форматы: JPG, PNG\n"
-        f"📏 Максимальный размер: 10 МБ",
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [btn("🏠 Главное меню", "home")]
-        ])
-    )
-
-async def callback_photo_retouch(callback: CallbackQuery):
-    """Обработка фото Retouch"""
-    await callback.answer()
-    user_id = callback.from_user.id
-    
-    from app.services import billing
-    
-    access = await billing.check_access(user_id, "photo_retouch")
-    if not access['access']:
-        await callback.message.edit_text(
-            f"❌ Недостаточно монеток!\n\n"
-            f"💰 Нужно: {access.get('cost', 4)} монет\n"
-            f"💳 У вас: {access.get('balance', 0)} монет\n\n"
-            f"Пополните баланс в профиле.",
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [btn("💳 Пополнить", "show_topup")],
-                [btn("🏠 Главное меню", "home")]
-            ])
-        )
-        return
-    
-    deduct_result = await billing.deduct_coins_for_feature(user_id, "photo_retouch")
-    
-    if not deduct_result['success']:
-        await callback.message.edit_text(
-            deduct_result['message'],
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [btn("🏠 Главное меню", "home")]
-            ])
-        )
-        return
-    
-    deduction_info = (
-        f"💰 <b>Списано:</b> {deduct_result['coins_spent']} монет\n"
-        f"💳 <b>Остаток:</b> {deduct_result['balance_after']} монет\n\n"
-    )
-    
-    await callback.message.edit_text(
-        f"🪄 <b>Gemini Retouch</b>\n\n"
-        f"{deduction_info}"
-        f"📸 <b>Отправьте фото для ретуши</b>\n\n"
-        f"⚠️ Поддерживаются форматы: JPG, PNG\n"
-        f"📏 Максимальный размер: 10 МБ",
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [btn("🏠 Главное меню", "home")]
-        ])
-    )
-
-async def callback_photo_style(callback: CallbackQuery):
-    """Обработка фото Style"""
-    await callback.answer()
-    user_id = callback.from_user.id
-    
-    from app.services import billing
-    
-    access = await billing.check_access(user_id, "photo_style")
-    if not access['access']:
-        await callback.message.edit_text(
-            f"❌ Недостаточно монеток!\n\n"
-            f"💰 Нужно: {access.get('cost', 4)} монет\n"
-            f"💳 У вас: {access.get('balance', 0)} монет\n\n"
-            f"Пополните баланс в профиле.",
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [btn("💳 Пополнить", "show_topup")],
-                [btn("🏠 Главное меню", "home")]
-            ])
-        )
-        return
-    
-    deduct_result = await billing.deduct_coins_for_feature(user_id, "photo_style")
-    
-    if not deduct_result['success']:
-        await callback.message.edit_text(
-            deduct_result['message'],
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [btn("🏠 Главное меню", "home")]
-            ])
-        )
-        return
-    
-    deduction_info = (
-        f"💰 <b>Списано:</b> {deduct_result['coins_spent']} монет\n"
-        f"💳 <b>Остаток:</b> {deduct_result['balance_after']} монет\n\n"
-    )
-    
-    await callback.message.edit_text(
-        f"🪄 <b>Gemini Style</b>\n\n"
-        f"{deduction_info}"
-        f"📸 <b>Отправьте фото для изменения стиля</b>\n\n"
-        f"⚠️ Поддерживаются форматы: JPG, PNG\n"
-        f"📏 Максимальный размер: 10 МБ",
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [btn("🏠 Главное меню", "home")]
-        ])
-    )
-
-# === ОБРАБОТЧИКИ ПРИМЕРОЧНОЙ ===
-
-async def callback_tryon_basic(callback: CallbackQuery):
-    """Обработка примерочной Basic"""
-    await callback.answer()
-    user_id = callback.from_user.id
-    
-    from app.services import billing
-    
-    access = await billing.check_access(user_id, "tryon_basic")
-    if not access['access']:
-        await callback.message.edit_text(
-            f"❌ Недостаточно монеток!\n\n"
-            f"💰 Нужно: {access.get('cost', 6)} монет\n"
-            f"💳 У вас: {access.get('balance', 0)} монет\n\n"
-            f"Пополните баланс в профиле.",
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [btn("💳 Пополнить", "show_topup")],
-                [btn("🏠 Главное меню", "home")]
-            ])
-        )
-        return
-    
-    deduct_result = await billing.deduct_coins_for_feature(user_id, "tryon_basic")
-    
-    if not deduct_result['success']:
-        await callback.message.edit_text(
-            deduct_result['message'],
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [btn("🏠 Главное меню", "home")]
-            ])
-        )
-        return
-    
-    deduction_info = (
-        f"💰 <b>Списано:</b> {deduct_result['coins_spent']} монет\n"
-        f"💳 <b>Остаток:</b> {deduct_result['balance_after']} монет\n\n"
-    )
-    
-    await callback.message.edit_text(
-        f"👗 <b>Imagen Try-On</b>\n\n"
-        f"{deduction_info}"
-        f"📸 <b>Отправьте фото человека для примерки</b>\n\n"
-        f"⚠️ Поддерживаются форматы: JPG, PNG\n"
-        f"📏 Максимальный размер: 10 МБ\n"
-        f"👤 Лучше всего работает с портретными фото",
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [btn("🏠 Главное меню", "home")]
-        ])
-    )
-
-async def callback_tryon_fashion(callback: CallbackQuery):
-    """Обработка примерочной Fashion"""
-    await callback.answer()
-    user_id = callback.from_user.id
-    
-    from app.services import billing
-    
-    access = await billing.check_access(user_id, "tryon_fashion")
-    if not access['access']:
-        await callback.message.edit_text(
-            f"❌ Недостаточно монеток!\n\n"
-            f"💰 Нужно: {access.get('cost', 10)} монет\n"
-            f"💳 У вас: {access.get('balance', 0)} монет\n\n"
-            f"Пополните баланс в профиле.",
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [btn("💳 Пополнить", "show_topup")],
-                [btn("🏠 Главное меню", "home")]
-            ])
-        )
-        return
-    
-    deduct_result = await billing.deduct_coins_for_feature(user_id, "tryon_fashion")
-    
-    if not deduct_result['success']:
-        await callback.message.edit_text(
-            deduct_result['message'],
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [btn("🏠 Главное меню", "home")]
-            ])
-        )
-        return
-    
-    deduction_info = (
-        f"💰 <b>Списано:</b> {deduct_result['coins_spent']} монет\n"
-        f"💳 <b>Остаток:</b> {deduct_result['balance_after']} монет\n\n"
-    )
-    
-    await callback.message.edit_text(
-        f"👗 <b>Imagen Fashion</b>\n\n"
-        f"{deduction_info}"
-        f"📸 <b>Отправьте фото человека для стильной примерки</b>\n\n"
-        f"⚠️ Поддерживаются форматы: JPG, PNG\n"
-        f"📏 Максимальный размер: 10 МБ\n"
-        f"👤 Лучше всего работает с портретными фото",
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [btn("🏠 Главное меню", "home")]
-        ])
-    )
-
-async def callback_tryon_pro(callback: CallbackQuery):
-    """Обработка примерочной Pro"""
-    await callback.answer()
-    user_id = callback.from_user.id
-    
-    from app.services import billing
-    
-    access = await billing.check_access(user_id, "tryon_pro")
-    if not access['access']:
-        await callback.message.edit_text(
-            f"❌ Недостаточно монеток!\n\n"
-            f"💰 Нужно: {access.get('cost', 15)} монет\n"
-            f"💳 У вас: {access.get('balance', 0)} монет\n\n"
-            f"Пополните баланс в профиле.",
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [btn("💳 Пополнить", "show_topup")],
-                [btn("🏠 Главное меню", "home")]
-            ])
-        )
-        return
-    
-    deduct_result = await billing.deduct_coins_for_feature(user_id, "tryon_pro")
-    
-    if not deduct_result['success']:
-        await callback.message.edit_text(
-            deduct_result['message'],
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [btn("🏠 Главное меню", "home")]
-            ])
-        )
-        return
-    
-    deduction_info = (
-        f"💰 <b>Списано:</b> {deduct_result['coins_spent']} монет\n"
-        f"💳 <b>Остаток:</b> {deduct_result['balance_after']} монет\n\n"
-    )
-    
-    await callback.message.edit_text(
-        f"👗 <b>Imagen Pro</b>\n\n"
-        f"{deduction_info}"
-        f"📸 <b>Отправьте фото человека для профессиональной примерки</b>\n\n"
-        f"⚠️ Поддерживаются форматы: JPG, PNG\n"
-        f"📏 Максимальный размер: 10 МБ\n"
-        f"👤 Лучше всего работает с портретными фото\n"
-        f"✨ Получите 3 варианта примерки",
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [btn("🏠 Главное меню", "home")]
-        ])
-    )
-
-# === FALLBACK ===
 
 async def callback_fallback(callback: CallbackQuery):
     """Обработка необработанных callback'ов"""

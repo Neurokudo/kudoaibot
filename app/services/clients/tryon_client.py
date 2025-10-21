@@ -1,4 +1,4 @@
-# tryon_client.py
+# app/services/clients/tryon_client.py
 # Клиент для Vertex AI Virtual Try-On (virtual-try-on-preview-08-04)
 
 import os
@@ -15,8 +15,8 @@ from google.auth.transport.requests import Request
 
 log = logging.getLogger("tryon-client")
 
-PROJECT_ID = os.getenv("GCP_PROJECT_ID") or os.getenv("GOOGLE_CLOUD_PROJECT", "ornate-producer-473220-g2")
-LOCATION = os.getenv("GCP_LOCATION") or os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
+PROJECT_ID = os.getenv("GCP_PROJECT_ID", "ornate-producer-473220-g2")
+LOCATION = os.getenv("GCP_LOCATION", "us-central1")
 SCOPES = ["https://www.googleapis.com/auth/cloud-platform"]
 MODEL_ID = "virtual-try-on-preview-08-04"
 HTTP_RETRIES = int(os.getenv("HTTP_RETRIES", "3"))

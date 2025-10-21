@@ -16,6 +16,7 @@ class UserState:
     video_params: Dict[str, Any] = field(default_factory=dict)
     last_prompt: Optional[str] = None
     last_activity: datetime = field(default_factory=datetime.now)
+    tryon_data: Dict[str, Any] = field(default_factory=dict)  # Данные для примерочной
     
     def reset(self):
         """Сброс состояния"""
@@ -25,6 +26,7 @@ class UserState:
         self.waiting_for = None
         self.video_params = {}
         self.last_prompt = None
+        self.tryon_data = {}
 
 # Хранилище состояний пользователей
 user_states: Dict[int, UserState] = {}
@@ -35,6 +37,11 @@ def get_user_state(user_id: int) -> UserState:
         user_states[user_id] = UserState(user_id=user_id)
     user_states[user_id].last_activity = datetime.now()
     return user_states[user_id]
+
+def set_user_state(user_id: int, state: UserState):
+    """Установить состояние пользователя"""
+    state.last_activity = datetime.now()
+    user_states[user_id] = state
 
 def clear_user_state(user_id: int):
     """Очистить состояние пользователя"""

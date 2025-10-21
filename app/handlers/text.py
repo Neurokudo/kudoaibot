@@ -56,9 +56,9 @@ async def handle_text_message(message: Message):
     state = get_user_state(user_id)
     
     # Если пользователь ожидает промпт в новом режиме
-    if state.get("awaiting_prompt"):
-        mode = state.get("mode", "manual")
-        model = state.get("model", "veo3")
+    if hasattr(state, 'awaiting_prompt') and state.awaiting_prompt:
+        mode = getattr(state, 'mode', 'manual')
+        model = getattr(state, 'video_model', 'veo3')
         
         # Обрабатываем промпт в зависимости от режима
         if mode == "helper":

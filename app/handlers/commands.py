@@ -82,8 +82,8 @@ async def cmd_start(message: Message):
     days_left = status.get('days_left', 0) if status.get('has_active') else None
     
     welcome_text = f"👋 Привет, {name}!\n\n"
-    welcome_text += f"💰 Баланс: <b>{balance_info['total']}</b> монет\n"
-    welcome_text += f"🎬 Примерно хватит на: {balance_info['total'] // 5} видео\n\n"
+    welcome_text += f"💰 Баланс: <b>{balance['total']}</b> монет\n"
+    welcome_text += f"🎬 Примерно хватит на: {balance['total'] // 5} видео\n\n"
     welcome_text += f"🎬 <b>Что ты можешь сделать:</b>\n"
     welcome_text += f"— Создавать видео с помощью ИИ\n"
     welcome_text += f"— Редактировать фото\n"

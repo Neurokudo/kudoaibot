@@ -64,8 +64,8 @@ def register_callbacks():
     dp.callback_query.register(callback_meme_sora2, F.data == "meme_sora2")
     
     # Обработчики ориентации и аудио
-    dp.callback_query.register(callback_orientation_portrait, F.data == "orientation_portrait")
-    dp.callback_query.register(callback_orientation_landscape, F.data == "orientation_landscape")
+    dp.callback_query.register(callback_orientation_portrait, F.data == "ori_916")
+    dp.callback_query.register(callback_orientation_landscape, F.data == "ori_169")
     dp.callback_query.register(callback_audio_yes, F.data == "audio_yes")
     dp.callback_query.register(callback_audio_no, F.data == "audio_no")
     

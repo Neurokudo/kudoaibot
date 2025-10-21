@@ -41,13 +41,9 @@ def build_language_menu() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 def build_main_menu(lang: str = "ru") -> InlineKeyboardMarkup:
-    """Главное меню - плоская структура (Вариант 2)"""
+    """Главное меню - с подменю для создания видео"""
     keyboard = [
         [btn("🎬 Создать видео", "menu_create_video")],
-        [btn("🧠 Умный помощник", "menu_helper")],
-        [btn("🔮 Как у Neurokudo", "menu_neurokudo")],
-        [btn("🤡 Мемный режим", "menu_meme")],
-        [btn("🧱 LEGO мультики", "menu_lego")],
         [btn("🪄 Редактировать фото", "menu_photo")],
         [btn("👗 Примерочная", "menu_tryon")],
         [btn("💳 Подписка и монетки", "menu_tariffs")],
@@ -57,25 +53,16 @@ def build_main_menu(lang: str = "ru") -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 def build_create_video_menu(lang: str = "ru") -> InlineKeyboardMarkup:
-    """Меню быстрого создания видео - выбор модели"""
-    from app.core.features import FeatureFlags
-    
-    keyboard = []
-    
-    # VEO 3 (если доступен)
-    if FeatureFlags.has_veo3():
-        keyboard.append([btn("🔵 VEO 3", Actions.VIDEO_VEO3)])
-    else:
-        keyboard.append([btn("⚠️ VEO 3 недоступен (нет GCP ключа)", "disabled_veo3")])
-    
-    # SORA 2 (если доступен)
-    if FeatureFlags.has_sora2():
-        keyboard.append([btn("🔸 SORA 2", Actions.VIDEO_SORA2)])
-    else:
-        keyboard.append([btn("⚠️ SORA 2 недоступен (нет OpenAI ключа)", "disabled_sora2")])
-    
-    keyboard.append([btn(t("btn.back", lang), Actions.HOME)])
-    
+    """Меню создания видео - выбор режима"""
+    keyboard = [
+        [btn("🔵 VEO 3", "video_veo3")],
+        [btn("🔸 SORA 2", "video_sora2")],
+        [btn("🧠 Умный помощник", "menu_helper")],
+        [btn("🔮 Как у Neurokudo", "menu_neurokudo")],
+        [btn("🤡 Мемный режим", "menu_meme")],
+        [btn("🧱 LEGO мультики", "menu_lego")],
+        [btn("⬅️ Назад", "home")]
+    ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 def build_helper_menu(lang: str = "ru") -> InlineKeyboardMarkup:

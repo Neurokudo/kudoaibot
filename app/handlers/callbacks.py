@@ -63,6 +63,12 @@ def register_callbacks():
     dp.callback_query.register(callback_meme_veo3, F.data == "meme_veo3")
     dp.callback_query.register(callback_meme_sora2, F.data == "meme_sora2")
     
+    # Обработчики ориентации и аудио
+    dp.callback_query.register(callback_orientation_portrait, F.data == "orientation_portrait")
+    dp.callback_query.register(callback_orientation_landscape, F.data == "orientation_landscape")
+    dp.callback_query.register(callback_audio_yes, F.data == "audio_yes")
+    dp.callback_query.register(callback_audio_no, F.data == "audio_no")
+    
     # Обработчики покупки
     dp.callback_query.register(callback_show_plans, F.data == "show_plans")
     dp.callback_query.register(callback_buy_tariff, F.data.startswith("buy_tariff_"))

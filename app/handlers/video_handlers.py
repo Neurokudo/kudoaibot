@@ -281,6 +281,12 @@ async def generate_video(message: Message, state):
             clear_user_state(user_id)
             return
         
+        # Показываем информацию о списании
+        deduction_info = (
+            f"💰 <b>Списано:</b> {deduct_result['coins_spent']} монет\n"
+            f"💳 <b>Остаток:</b> {deduct_result['balance_after']} монет\n\n"
+        )
+        
         # Генерируем видео
         if state.video_model == "sora2":
             # SORA 2 использует асинхронную генерацию через callback
@@ -297,6 +303,7 @@ async def generate_video(message: Message, state):
                 # Задача создана успешно
                 await status_msg.edit_text(
                     f"✨ <b>Ваше видео создается!</b>\n\n"
+                    f"{deduction_info}"
                     f"🎬 <b>Описание:</b> {state.last_prompt}\n\n"
                     f"🆔 <b>ID задачи:</b> <code>{task_id}</code>\n\n"
                     f"⏳ <b>Ожидайте уведомление когда видео будет готово</b>\n\n"
@@ -333,6 +340,7 @@ async def generate_video(message: Message, state):
                 # Задача создана успешно
                 await status_msg.edit_text(
                     f"✨ <b>Ваше видео создается!</b>\n\n"
+                    f"{deduction_info}"
                     f"🎬 <b>Описание:</b> {state.last_prompt}\n\n"
                     f"🆔 <b>ID задачи:</b> <code>{task_id}</code>\n\n"
                     f"⏳ <b>Ожидайте уведомление когда видео будет готово (1-2 минуты)</b>\n\n"

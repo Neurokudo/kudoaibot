@@ -6,6 +6,7 @@ from .callbacks import Cb, Actions
 from .texts import t
 
 __all__ = [
+    'build_language_menu',
     'build_main_menu',
     'build_video_menu',
     'build_veo3_modes',
@@ -27,6 +28,17 @@ def btn(text: str, action: str, id: str = None, extra: str = None) -> InlineKeyb
     """Создать кнопку с callback данными"""
     cb = Cb(action=action, id=id, extra=extra)
     return InlineKeyboardButton(text=text, callback_data=cb.pack())
+
+def build_language_menu() -> InlineKeyboardMarkup:
+    """Меню выбора языка"""
+    keyboard = [
+        [btn("🇷🇺 Русский", "set_language", extra="ru")],
+        [btn("🇺🇸 English", "set_language", extra="en")],
+        [btn("🇪🇸 Español", "set_language", extra="es")],
+        [btn("🇸🇦 العربية", "set_language", extra="ar")],
+        [btn("🇮🇳 हिंदी", "set_language", extra="hi")]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 def build_main_menu(lang: str = "ru") -> InlineKeyboardMarkup:
     """Главное меню - финальная версия"""

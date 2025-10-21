@@ -36,6 +36,9 @@ def register_callbacks():
     """Регистрация callback обработчиков"""
     bot, dp = get_bot()
     
+    # Выбор языка
+    dp.callback_query.register(callback_set_language, F.data.startswith("set_language"))
+    
     # Регистрируем все callback обработчики
     dp.callback_query.register(callback_home, F.data == "home")
     dp.callback_query.register(callback_video, F.data == "menu_video")
@@ -566,5 +569,29 @@ async def callback_fallback(callback: CallbackQuery):
     await callback.message.edit_text(
         "🏠 Главное меню",
         reply_markup=build_main_menu(user_language)
+    )
+
+async def callback_set_language(callback: CallbackQuery):
+    """Обработчик выбора языка"""
+    await callback.answer()
+    
+    # Парсим callback data
+    from app.ui.callbacks import parse_cb
+    cb = parse_cb(callback.data)
+    language = cb.extra  # ru, en, es, ar, hi
+    
+    user_id = callback.from_user.id
+    
+    # Обновляем язык пользователя в БД
+    await users.update_user_language(user_id, language)
+    
+    # Получаем локализованные тексты
+    from app.ui.texts import t
+    from app.ui.keyboards import build_main_menu
+    
+    # Показываем подтверждение выбора языка
+    await callback.message.edit_text(
+        t("language.selected", language),
+        reply_markup=build_main_menu(language)
     )
 

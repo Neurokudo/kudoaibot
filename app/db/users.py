@@ -13,7 +13,7 @@ async def create_user(
     username: Optional[str] = None,
     first_name: Optional[str] = None,
     last_name: Optional[str] = None,
-    language: str = 'ru'
+    language: Optional[str] = None
 ) -> Dict[str, Any]:
     """Создать нового пользователя"""
     try:
@@ -144,4 +144,19 @@ async def is_user_blocked(user_id: int) -> bool:
         return result['is_blocked'] if result else False
     except Exception as e:
         log.error(f"❌ Ошибка проверки блокировки {user_id}: {e}")
+        return False
+
+async def update_user_language(user_id: int, language: str) -> bool:
+    """Обновить язык пользователя"""
+    try:
+        query = """
+            UPDATE users 
+            SET language = $2, updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = $1
+        """
+        await execute_query(query, user_id, language)
+        log.info(f"✅ Язык пользователя {user_id} обновлен на {language}")
+        return True
+    except Exception as e:
+        log.error(f"❌ Ошибка обновления языка {user_id}: {e}")
         return False

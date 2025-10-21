@@ -75,6 +75,9 @@ class Actions:
     HOME = "home"
     BACK = "back"
     
+    # Выбор языка
+    SET_LANGUAGE = "set_language"
+    
     # Главное меню
     MENU_VIDEO = "menu_video"
     MENU_PHOTO = "menu_photo"

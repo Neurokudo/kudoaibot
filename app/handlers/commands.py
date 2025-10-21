@@ -37,7 +37,7 @@ async def ensure_user_exists(message: Message) -> dict:
             username=message.from_user.username,
             first_name=message.from_user.first_name,
             last_name=message.from_user.last_name,
-            language='ru'
+            language=None  # Не устанавливаем язык по умолчанию
         )
         log.info(f"✅ Создан новый пользователь: {message.from_user.id}")
     return user
@@ -46,6 +46,11 @@ async def get_user_language(user_id: int) -> str:
     """Получить язык пользователя"""
     user = await users.get_user(user_id)
     return user['language'] if user else 'ru'
+
+async def is_language_set(user_id: int) -> bool:
+    """Проверить, установлен ли язык пользователя"""
+    user = await users.get_user(user_id)
+    return user and user.get('language') is not None
 
 async def get_user_data(user_id: int) -> dict:
     """Получить данные пользователя включая подписку"""
@@ -66,9 +71,22 @@ async def get_user_data(user_id: int) -> dict:
 async def cmd_start(message: Message):
     """Обработчик команды /start"""
     await ensure_user_exists(message)
-    user_language = await get_user_language(message.from_user.id)
-    
     user_id = message.from_user.id
+    
+    # Проверяем, установлен ли язык
+    if not await is_language_set(user_id):
+        # Показываем выбор языка
+        from app.ui.texts import t
+        from app.ui.keyboards import build_language_menu
+        
+        await message.answer(
+            t("language.welcome", "ru"),  # Показываем на русском по умолчанию
+            reply_markup=build_language_menu()
+        )
+        return
+    
+    # Если язык установлен, показываем главное меню
+    user_language = await get_user_language(user_id)
     name = message.from_user.first_name or "друг"
     
     # Получаем dual balance

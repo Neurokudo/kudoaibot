@@ -53,62 +53,61 @@ def build_main_menu(lang: str = "ru") -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 def build_video_menu(lang: str = "ru") -> InlineKeyboardMarkup:
-    """Меню выбора видео модели (с учётом доступности)"""
+    """Меню выбора платформы видео"""
     from app.core.features import FeatureFlags
     
     keyboard = []
     
-    # VEO 3 модели (если доступны)
+    # VEO 3 платформа (если доступна)
     if FeatureFlags.has_veo3():
-        keyboard.append([btn("🔹 Veo 3 Fast — 3 монетки/сек", Actions.VIDEO_VEO3_FAST)])
-        keyboard.append([btn("🔵 Veo 3 Pro — 5 монеток/сек", Actions.VIDEO_VEO3)])
+        keyboard.append([btn("🔵 VEO 3", Actions.VIDEO_VEO3)])
     else:
         keyboard.append([btn("⚠️ VEO 3 недоступен (нет GCP ключа)", "disabled_veo3")])
     
-    # SORA 2 модели (если доступны)
+    # SORA 2 платформа (если доступна)
     if FeatureFlags.has_sora2():
-        keyboard.append([btn("🔸 Sora 2 — 8 монеток/сек", Actions.VIDEO_SORA2)])
-        keyboard.append([btn("🟠 Sora 2 Pro — 12 монеток/сек", Actions.VIDEO_SORA2_PRO)])
+        keyboard.append([btn("🔸 SORA 2", Actions.VIDEO_SORA2)])
     else:
         keyboard.append([btn("⚠️ SORA 2 недоступен (нет OpenAI ключа)", "disabled_sora2")])
-    
-    # Gemini (пока заглушка)
-    # keyboard.append([btn("🤖 Gemini Video — 4 монетки/оп", Actions.VIDEO_GEMINI)])
     
     keyboard.append([btn(t("btn.back", lang), Actions.HOME)])
     
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 def build_veo3_modes(lang: str = "ru") -> InlineKeyboardMarkup:
-    """Режимы генерации VEO 3 (с учётом доступности GPT)"""
+    """Режимы генерации VEO 3 (как в babka-bot-clean)"""
     from app.core.features import FeatureFlags
     
     keyboard = []
     
     # GPT режимы (только если OpenAI доступен)
     if FeatureFlags.has_gpt_helper():
-        keyboard.append([btn(t("btn.mode_helper", lang), Actions.MODE_HELPER)])
-        keyboard.append([btn(t("btn.mode_meme", lang), Actions.MODE_MEME)])
+        keyboard.append([btn(t("mode.helper", lang), Actions.MODE_HELPER)])
+        keyboard.append([btn(t("mode.meme", lang), Actions.MODE_MEME)])
     
-    # Ручной режим всегда доступен
-    keyboard.append([btn(t("btn.mode_manual", lang), Actions.MODE_MANUAL)])
+    # Ручной режим (всегда доступен)
+    keyboard.append([btn(t("mode.manual", lang), Actions.MODE_MANUAL)])
     
-    # Если GPT недоступен, показываем предупреждение
-    if not FeatureFlags.has_gpt_helper():
-        keyboard.insert(0, [btn("⚠️ Помощник недоступен (нет OpenAI ключа)", "disabled_helper")])
-    
-    keyboard.append([btn(t("btn.back", lang), Actions.MENU_VIDEO)])
+    keyboard.append([btn(t("btn.back", lang), Actions.HOME)])
     
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 def build_sora2_modes(lang: str = "ru") -> InlineKeyboardMarkup:
-    """Режимы генерации SORA 2"""
-    keyboard = [
-        [btn(t("btn.mode_helper", lang), Actions.MODE_HELPER, "sora2")],
-        [btn(t("btn.mode_manual", lang), Actions.MODE_MANUAL, "sora2")],
-        [btn(t("btn.mode_meme", lang), Actions.MODE_MEME, "sora2")],
-        [btn(t("btn.back", lang), Actions.MENU_VIDEO)],
-    ]
+    """Режимы генерации SORA 2 (как в babka-bot-clean)"""
+    from app.core.features import FeatureFlags
+    
+    keyboard = []
+    
+    # GPT режимы (только если OpenAI доступен)
+    if FeatureFlags.has_gpt_helper():
+        keyboard.append([btn(t("mode.helper", lang), Actions.MODE_HELPER)])
+        keyboard.append([btn(t("mode.meme", lang), Actions.MODE_MEME)])
+    
+    # Ручной режим (всегда доступен)
+    keyboard.append([btn(t("mode.manual", lang), Actions.MODE_MANUAL)])
+    
+    keyboard.append([btn(t("btn.back", lang), Actions.HOME)])
+    
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 def build_orientation_menu(lang: str = "ru") -> InlineKeyboardMarkup:

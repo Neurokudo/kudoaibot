@@ -13,11 +13,6 @@ from app.core.bot import get_bot
 from .commands import ensure_user_exists, get_user_language, get_user_data
 from .video_handlers import (
     handle_video_menu,
-    handle_veo3_menu,
-    handle_sora2_menu,
-    handle_mode_helper,
-    handle_mode_manual,
-    handle_mode_meme,
     handle_orientation_choice,
     handle_audio_choice,
     handle_video_regenerate,

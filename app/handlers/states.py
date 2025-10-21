@@ -38,10 +38,19 @@ def get_user_state(user_id: int) -> UserState:
     user_states[user_id].last_activity = datetime.now()
     return user_states[user_id]
 
-def set_user_state(user_id: int, state: UserState):
-    """Установить состояние пользователя"""
+def set_user_state(user_id: int, state_data: dict):
+    """Установить состояние пользователя из словаря"""
+    # Получаем существующее состояние или создаем новое
+    if user_id not in user_states:
+        user_states[user_id] = UserState(user_id=user_id)
+    
+    # Обновляем поля состояния из словаря
+    state = user_states[user_id]
+    for key, value in state_data.items():
+        if hasattr(state, key):
+            setattr(state, key, value)
+    
     state.last_activity = datetime.now()
-    user_states[user_id] = state
 
 def clear_user_state(user_id: int):
     """Очистить состояние пользователя"""

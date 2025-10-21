@@ -8,7 +8,7 @@ from aiogram.types import CallbackQuery
 from app.db import users
 from app.services import billing
 from app.ui import Actions, t
-from app.ui.keyboards import build_main_menu, tariff_selection, topup_packs_menu
+from app.ui.keyboards import build_main_menu, tariff_selection, topup_packs_menu, build_profile_menu
 from app.core.bot import get_bot
 from .commands import ensure_user_exists, get_user_language, get_user_data
 from .video_handlers import (
@@ -56,6 +56,9 @@ def register_callbacks():
     
     # Покупка монеток
     dp.callback_query.register(callback_show_topup, F.data == Actions.PAYMENT_TOPUP)
+    
+    # Тарифы
+    dp.callback_query.register(callback_show_tariffs, F.data == Actions.MENU_TARIFFS)
     
     # Fallback для необработанных callback'ов (должен быть последним!)
     dp.callback_query.register(callback_fallback)
@@ -133,15 +136,21 @@ async def callback_profile(callback: CallbackQuery):
     user = await users.get_user(user_id)
     reg_date = user.get('created_at', 'Неизвестно') if user else 'Неизвестно'
     
+    # Получаем детальную информацию о балансе
+    from app.services.dual_balance import get_user_dual_balance
+    balance_info = await get_user_dual_balance(user_id)
+    
     profile_text = f"👤 <b>Профиль</b>\n\n"
     profile_text += f"Имя: {name}\n"
-    profile_text += f"💰 Баланс: {user_data['videos_left']} монеток\n"
+    profile_text += f"💰 Баланс: <b>{balance_info['total']}</b> монеток\n"
+    profile_text += f"├ 🟢 Подписочные: {balance_info['subscription_coins']}\n"
+    profile_text += f"└ 🟣 Постоянные: {balance_info['permanent_coins']}\n"
     profile_text += f"📊 Тариф: {user_data['subscription_type']}\n"
     profile_text += f"📅 Регистрация: {reg_date}\n"
     
     await callback.message.edit_text(
         profile_text,
-        reply_markup=tariff_selection(user_language)
+        reply_markup=build_profile_menu(user_language)
     )
 
 # === РЕЖИМЫ ГЕНЕРАЦИИ ===
@@ -220,6 +229,20 @@ async def callback_show_topup(callback: CallbackQuery):
     await callback.message.edit_text(
         topup_text,
         reply_markup=topup_packs_menu()
+    )
+
+async def callback_show_tariffs(callback: CallbackQuery):
+    """Показать тарифы"""
+    await callback.answer()
+    user_language = await get_user_language(callback.from_user.id)
+    
+    from app.config.pricing import get_full_pricing_text
+    
+    tariffs_text = get_full_pricing_text()
+    
+    await callback.message.edit_text(
+        tariffs_text,
+        reply_markup=tariff_selection(user_language)
     )
 
 # === FALLBACK ===

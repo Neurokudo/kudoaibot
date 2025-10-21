@@ -17,6 +17,7 @@ __all__ = [
     'build_keyboard',
     'tariff_selection',
     'topup_packs_menu',
+    'build_profile_menu',
     'btn'
 ]
 
@@ -216,4 +217,13 @@ def build_keyboard(screen_id: str, lang: str = "ru") -> InlineKeyboardMarkup:
         return build_audio_menu(lang)
     else:
         return build_main_menu(lang)
+
+def build_profile_menu(lang: str = "ru") -> InlineKeyboardMarkup:
+    """Меню профиля с тарифами и пополнением"""
+    keyboard = [
+        [btn("📊 Тарифы", Actions.MENU_TARIFFS)],
+        [btn("💰 Докупить монеты", Actions.PAYMENT_TOPUP)],
+        [btn("🏠 Главное меню", Actions.HOME)]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
 

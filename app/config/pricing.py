@@ -123,9 +123,9 @@ TARIFFS: Dict[str, Tariff] = {
         description="30-40 видео",
         bonus_percent=40
     ),
-    "pro_sora": Tariff(
-        name="pro_sora",
-        title="PRO Sora 2",
+    "pro": Tariff(
+        name="pro",
+        title="PRO",
         price_rub=7490,
         coins=1600,
         duration_days=30,

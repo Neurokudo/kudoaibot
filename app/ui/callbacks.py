@@ -80,6 +80,7 @@ class Actions:
     MENU_PHOTO = "menu_photo"
     MENU_TRYON = "menu_tryon"
     MENU_PROFILE = "menu_profile"
+    MENU_TARIFFS = "menu_tariffs"
     
     # Раздел ВИДЕО
     VIDEO_SORA2 = "video_sora2"

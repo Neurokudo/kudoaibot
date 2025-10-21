@@ -29,15 +29,14 @@ def btn(text: str, action: str, id: str = None, extra: str = None) -> InlineKeyb
     return InlineKeyboardButton(text=text, callback_data=cb.pack())
 
 def build_main_menu(lang: str = "ru") -> InlineKeyboardMarkup:
-    """Главное меню - упрощенное"""
+    """Главное меню - финальная версия"""
     keyboard = [
         [btn("🎬 Создать видео", "menu_video")],
         [btn("🪄 Редактировать фото", "menu_photo")],
         [btn("👗 Примерочная", "menu_tryon")],
-        [btn("👤 Профиль", "menu_profile")],
-        [btn("💰 Пополнить монетки", "show_topup")],
-        [btn("📊 Тарифы", "menu_tariffs")],
-        [btn("ℹ️ Помощь", "menu_help")]
+        [btn("💳 Подписка и монетки", "menu_tariffs")],
+        [btn("👤 Мой профиль", "menu_profile")],
+        [btn("ℹ️ Как это работает", "menu_help")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
@@ -224,32 +223,30 @@ def build_keyboard(screen_id: str, lang: str = "ru") -> InlineKeyboardMarkup:
         return build_main_menu(lang)
 
 def build_profile_menu(lang: str = "ru") -> InlineKeyboardMarkup:
-    """Меню профиля - упрощенное"""
+    """Меню профиля - финальная версия"""
     keyboard = [
-        [btn("💰 Пополнить баланс", "show_topup")],
-        [btn("📊 Тарифы", "menu_tariffs")],
-        [btn("🔙 Назад", "home")],
+        [btn("💳 Пополнить баланс", "show_topup")],
+        [btn("💸 Стоимость моделей", "models_cost")],
+        [btn("⬅️ Назад", "home")],
         [btn("🏠 Главное меню", "home")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 def build_tariffs_menu(lang: str = "ru") -> InlineKeyboardMarkup:
-    """Меню выбора типа тарифов"""
+    """Меню подписки и монеток - финальная версия"""
     keyboard = [
-        [btn("🎟 Подписки (на 30 дней)", "subscriptions")],
-        [btn("💰 Монетки навсегда", "permanent_coins")],
-        [btn("📘 Как считаются монетки", "coin_explanation")],
-        [btn("🔙 Назад", "home")],
+        [btn("🎟 Подписка (на 30 дней)", "subscriptions")],
+        [btn("🟣 Монетки навсегда", "permanent_coins")],
+        [btn("💸 Стоимость моделей", "models_cost")],
+        [btn("⬅️ Назад", "home")],
         [btn("🏠 Главное меню", "home")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 def build_help_menu(lang: str = "ru") -> InlineKeyboardMarkup:
-    """Меню помощи"""
+    """Меню помощи - финальная версия"""
     keyboard = [
-        [btn("📘 Как считаются монетки", "coin_explanation")],
-        [btn("📊 Тарифы", "menu_tariffs")],
-        [btn("🔙 Назад", "home")],
+        [btn("⬅️ Назад", "home")],
         [btn("🏠 Главное меню", "home")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)

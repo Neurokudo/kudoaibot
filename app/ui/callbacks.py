@@ -119,6 +119,7 @@ class Actions:
     SUBSCRIPTIONS = "subscriptions"
     PERMANENT_COINS = "permanent_coins"
     COIN_EXPLANATION = "coin_explanation"
+    MODELS_COST = "models_cost"
     
     # Дополнительно
     VIDEO_REGENERATE = "video_regenerate"

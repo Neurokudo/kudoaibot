@@ -668,18 +668,19 @@ async def callback_video_veo3(callback: CallbackQuery):
     """Быстрое создание видео VEO 3"""
     await callback.answer()
     from app.handlers.states import set_user_state
+    from app.ui.keyboards import build_orientation_menu
     
     user_id = callback.from_user.id
     set_user_state(user_id, {
         "mode": "manual",
-        "model": "veo3",
-        "awaiting_prompt": True
+        "video_model": "veo3",
+        "awaiting_orientation": True
     })
     
     await callback.message.edit_text(
-        "🎬 **Быстрое создание видео VEO 3**\n\n"
-        "Напишите описание сцены для генерации видео.\n"
-        "Пример: \"Бабушка кормит кур во дворе\""
+        "⚡ **Быстрое создание VEO 3 активировано!**\n\n"
+        "Сначала выберите ориентацию видео:",
+        reply_markup=build_orientation_menu()
     )
 
 async def callback_video_sora2(callback: CallbackQuery):

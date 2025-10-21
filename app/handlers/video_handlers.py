@@ -131,14 +131,15 @@ async def handle_text_input(message: Message, custom_prompt: str = None):
     user_id = message.from_user.id
     state = get_user_state(user_id)
     
-    if not state.waiting_for and not custom_prompt:
+    if not state.waiting_for and not state.awaiting_prompt and not custom_prompt:
         return
     
-    if state.waiting_for == "prompt_input" or custom_prompt:
+    if state.waiting_for == "prompt_input" or state.awaiting_prompt or custom_prompt:
         prompt = custom_prompt or message.text.strip()
         await process_prompt_input(message, state, prompt)
     
     state.waiting_for = None
+    state.awaiting_prompt = False
 
 async def process_prompt_input(message: Message, state, prompt: str):
     """Обработка промпта от пользователя"""
@@ -198,9 +199,9 @@ async def process_prompt_input(message: Message, state, prompt: str):
             )
     
     elif state.video_mode == "manual":
-        # Используем промпт как есть
+        # Используем промпт как есть и сразу генерируем
         state.last_prompt = prompt
-        await ask_orientation(message, state, prompt)
+        await generate_video(message, state)
 
 async def ask_orientation(message: Message, state, prompt: str):
     """Запрос ориентации видео"""
@@ -215,6 +216,10 @@ async def handle_orientation_choice(callback: CallbackQuery):
     """Обработка выбора ориентации"""
     user_id = callback.from_user.id
     state = get_user_state(user_id)
+    
+    # Инициализируем video_params если её нет
+    if not hasattr(state, 'video_params') or state.video_params is None:
+        state.video_params = {}
     
     cb = parse_cb(callback.data)
     
@@ -244,9 +249,15 @@ async def handle_audio_choice(callback: CallbackQuery):
     # По умолчанию 8 секунд
     state.video_params["duration"] = 8
     
-    # Начинаем генерацию
-    await callback.message.delete()
-    await generate_video(callback.message, state)
+    # Устанавливаем состояние ожидания промпта
+    state.awaiting_prompt = True
+    
+    # Запрашиваем промпт
+    await callback.message.edit_text(
+        "🎬 **Отлично! Теперь опишите сцену для видео:**\n\n"
+        "Пример: \"Бабушка кормит кур во дворе\"\n"
+        "Или: \"Кот играет с мячиком в гостиной\""
+    )
 
 async def generate_video(message: Message, state):
     """Генерация видео"""

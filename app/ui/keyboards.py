@@ -48,15 +48,15 @@ def build_video_menu(lang: str = "ru") -> InlineKeyboardMarkup:
     
     # VEO 3 модели (если доступны)
     if FeatureFlags.has_veo3():
-        keyboard.append([btn("⚡ Veo 3 Fast — 3 монетки/сек", Actions.VIDEO_VEO3_FAST)])
-        keyboard.append([btn("🎥 Veo 3 — 5 монеток/сек", Actions.VIDEO_VEO3)])
+        keyboard.append([btn("🔹 Veo 3 Fast — 3 монетки/сек", Actions.VIDEO_VEO3_FAST)])
+        keyboard.append([btn("🔵 Veo 3 Pro — 5 монеток/сек", Actions.VIDEO_VEO3)])
     else:
         keyboard.append([btn("⚠️ VEO 3 недоступен (нет GCP ключа)", "disabled_veo3")])
     
     # SORA 2 модели (если доступны)
     if FeatureFlags.has_sora2():
-        keyboard.append([btn("🌟 Sora 2 — стандарт", Actions.VIDEO_SORA2)])
-        keyboard.append([btn("🔥 Sora 2 Pro — 12 монеток/сек", Actions.VIDEO_SORA2_PRO)])
+        keyboard.append([btn("🔸 Sora 2 — 8 монеток/сек", Actions.VIDEO_SORA2)])
+        keyboard.append([btn("🟠 Sora 2 Pro — 12 монеток/сек", Actions.VIDEO_SORA2_PRO)])
     else:
         keyboard.append([btn("⚠️ SORA 2 недоступен (нет OpenAI ключа)", "disabled_sora2")])
     

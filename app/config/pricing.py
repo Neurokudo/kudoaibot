@@ -12,6 +12,7 @@ COSTS_RUB = {
     "VEO3_FAST": 9,         # ₽/сек
     "VEO3": 18,             # ₽/сек
     "VEO3_AUDIO": 36,       # ₽/сек
+    "SORA2": 6,             # ₽/сек (стандартное качество)
     "SORA2_PRO": 30,        # ₽/сек (27-45 среднее)
     "GEMINI": 13.5,         # ₽/операция
     "IMAGEN_TRYON": 15      # ₽/операция
@@ -25,6 +26,7 @@ TARGET_MARGIN = {
     "VEO3_FAST": 3.0,       # 3× маржа
     "VEO3": 2.8,            # 2.8× маржа
     "VEO3_AUDIO": 2.7,      # 2.7× маржа
+    "SORA2": 4.0,           # 4× маржа (стандартное качество)
     "SORA2_PRO": 4.0,       # 4× маржа (премиум)
     "GEMINI": 3.0,          # 3× маржа
     "IMAGEN_TRYON": 3.5     # 3.5× маржа
@@ -51,6 +53,7 @@ COINS_PER_SECOND = {
     "VEO3_FAST": calculate_coins_per_second("VEO3_FAST"),    # 3 мон/сек (9×3/3)
     "VEO3": calculate_coins_per_second("VEO3"),              # 5 мон/сек (18×2.8/3)
     "VEO3_AUDIO": calculate_coins_per_second("VEO3_AUDIO"),  # 8 мон/сек (36×2.7/3)
+    "SORA2": calculate_coins_per_second("SORA2"),            # 8 мон/сек (6×4/3)
     "SORA2_PRO": calculate_coins_per_second("SORA2_PRO"),    # 12 мон/сек (30×4/3)
 }
 
@@ -176,6 +179,11 @@ FEATURE_COSTS: Dict[str, int] = {
     "veo3_audio_6s": calculate_video_cost("VEO3_AUDIO", 6), # 48 монет
     "veo3_audio_8s": calculate_video_cost("VEO3_AUDIO", 8), # 64 монеты
     
+    # === SORA 2 (8 мон/сек) ===
+    "sora2_5s": calculate_video_cost("SORA2", 5),     # 40 монет
+    "sora2_10s": calculate_video_cost("SORA2", 10),   # 80 монет
+    "sora2_20s": calculate_video_cost("SORA2", 20),   # 160 монет
+    
     # === SORA 2 PRO (12 мон/сек) ===
     "sora2_pro_5s": calculate_video_cost("SORA2_PRO", 5),   # 60 монет
     "sora2_pro_10s": calculate_video_cost("SORA2_PRO", 10), # 120 монет
@@ -202,15 +210,18 @@ FEATURE_COSTS: Dict[str, int] = {
 # ===== ОПИСАНИЯ С ДЕТАЛИЗАЦИЕЙ =====
 FEATURE_DESCRIPTIONS: Dict[str, str] = {
     # Видео
-    "veo3_fast_6s": "⚡ Veo 3 Fast (6 сек) — 3 мон/сек",
-    "veo3_fast_8s": "⚡ Veo 3 Fast (8 сек) — 3 мон/сек",
-    "veo3_6s": "🎥 Veo 3 (6 сек) — 5 мон/сек",
-    "veo3_8s": "🎥 Veo 3 (8 сек) — 5 мон/сек",
+    "veo3_fast_6s": "🔹 Veo 3 Fast (6 сек) — 3 мон/сек",
+    "veo3_fast_8s": "🔹 Veo 3 Fast (8 сек) — 3 мон/сек",
+    "veo3_6s": "🔵 Veo 3 Pro (6 сек) — 5 мон/сек",
+    "veo3_8s": "🔵 Veo 3 Pro (8 сек) — 5 мон/сек",
     "veo3_audio_6s": "🎬 Veo 3 Audio (6 сек) — 8 мон/сек",
     "veo3_audio_8s": "🎬 Veo 3 Audio (8 сек) — 8 мон/сек",
-    "sora2_pro_5s": "🔥 Sora 2 Pro (5 сек) — 12 мон/сек",
-    "sora2_pro_10s": "🔥 Sora 2 Pro (10 сек) — 12 мон/сек",
-    "sora2_pro_20s": "🔥 Sora 2 Pro (20 сек) — 12 мон/сек",
+    "sora2_5s": "🔸 Sora 2 (5 сек) — 8 мон/сек",
+    "sora2_10s": "🔸 Sora 2 (10 сек) — 8 мон/сек",
+    "sora2_20s": "🔸 Sora 2 (20 сек) — 8 мон/сек",
+    "sora2_pro_5s": "🟠 Sora 2 Pro (5 сек) — 12 мон/сек",
+    "sora2_pro_10s": "🟠 Sora 2 Pro (10 сек) — 12 мон/сек",
+    "sora2_pro_20s": "🟠 Sora 2 Pro (20 сек) — 12 мон/сек",
     
     # Фото
     "photo_enhance": "🪄 Gemini Enhance — 4 мон/операция",
@@ -355,10 +366,11 @@ def format_feature_costs_text() -> str:
     
     # Видео
     lines.append("🎬 <b>Видео:</b>")
-    lines.append(f"⚡ Veo 3 Fast — <b>3 монетки за секунду</b> (6 сек = {FEATURE_COSTS['veo3_fast_6s']} монеток, 8 сек = {FEATURE_COSTS['veo3_fast_8s']} монеток)")
-    lines.append(f"🎥 Veo 3 — <b>5 монеток за секунду</b> (6 сек = {FEATURE_COSTS['veo3_6s']} монеток, 8 сек = {FEATURE_COSTS['veo3_8s']} монеток)")
+    lines.append(f"🔹 Veo 3 Fast — <b>3 монетки за секунду</b> (6 сек = {FEATURE_COSTS['veo3_fast_6s']} монеток, 8 сек = {FEATURE_COSTS['veo3_fast_8s']} монеток)")
+    lines.append(f"🔵 Veo 3 Pro — <b>5 монеток за секунду</b> (6 сек = {FEATURE_COSTS['veo3_6s']} монеток, 8 сек = {FEATURE_COSTS['veo3_8s']} монеток)")
     lines.append(f"🎬 Veo 3 Audio — <b>8 монеток за секунду</b> (6 сек = {FEATURE_COSTS['veo3_audio_6s']} монеток, 8 сек = {FEATURE_COSTS['veo3_audio_8s']} монеток)")
-    lines.append(f"🔥 Sora 2 Pro — <b>12 монеток за секунду</b> (5 сек = {FEATURE_COSTS['sora2_pro_5s']} монеток, 10 сек = {FEATURE_COSTS['sora2_pro_10s']} монеток, 20 сек = {FEATURE_COSTS['sora2_pro_20s']} монеток)\n")
+    lines.append(f"🔸 Sora 2 — <b>8 монеток за секунду</b> (5 сек = {FEATURE_COSTS['sora2_5s']} монеток, 10 сек = {FEATURE_COSTS['sora2_10s']} монеток, 20 сек = {FEATURE_COSTS['sora2_20s']} монеток)")
+    lines.append(f"🟠 Sora 2 Pro — <b>12 монеток за секунду</b> (5 сек = {FEATURE_COSTS['sora2_pro_5s']} монеток, 10 сек = {FEATURE_COSTS['sora2_pro_10s']} монеток, 20 сек = {FEATURE_COSTS['sora2_pro_20s']} монеток)\n")
     
     # Фото
     lines.append("📸 <b>Фото (Gemini):</b>")

@@ -131,7 +131,10 @@ async def handle_text_input(message: Message, custom_prompt: str = None):
     user_id = message.from_user.id
     state = get_user_state(user_id)
     
+    log.info(f"📝 handle_text_input: user_id={user_id}, waiting_for={getattr(state, 'waiting_for', 'None')}, awaiting_prompt={getattr(state, 'awaiting_prompt', 'None')}")
+    
     if not state.waiting_for and not state.awaiting_prompt and not custom_prompt:
+        log.info(f"❌ handle_text_input: Не ожидаем ввод от пользователя {user_id}")
         return
     
     if state.waiting_for == "prompt_input" or state.awaiting_prompt or custom_prompt:
@@ -144,6 +147,8 @@ async def handle_text_input(message: Message, custom_prompt: str = None):
 async def process_prompt_input(message: Message, state, prompt: str):
     """Обработка промпта от пользователя"""
     user_id = message.from_user.id
+    
+    log.info(f"🔍 process_prompt_input: user_id={user_id}, mode={getattr(state, 'video_mode', 'None')}, prompt='{prompt[:50]}...'")
     
     if len(prompt) > MAX_PROMPT_LENGTH:
         await message.answer(
@@ -262,6 +267,8 @@ async def handle_audio_choice(callback: CallbackQuery):
 async def generate_video(message: Message, state):
     """Генерация видео"""
     user_id = message.from_user.id if hasattr(message, 'from_user') else message.chat.id
+    
+    log.info(f"🎬 generate_video: user_id={user_id}, model={getattr(state, 'video_model', 'None')}")
     
     # Проверяем доступ
     feature_name = "video_8s_mute" if not state.video_params.get("with_audio", False) else "video_8s_audio"

@@ -13,6 +13,7 @@ class UserState:
     video_model: Optional[str] = None  # "veo3" или "sora2"
     video_mode: Optional[str] = None   # "helper", "manual", "meme"
     waiting_for: Optional[str] = None  # Ожидание ввода от пользователя
+    awaiting_prompt: bool = False       # Ожидание промпта от пользователя
     video_params: Dict[str, Any] = field(default_factory=dict)
     last_prompt: Optional[str] = None
     last_activity: datetime = field(default_factory=datetime.now)
@@ -24,6 +25,7 @@ class UserState:
         self.video_model = None
         self.video_mode = None
         self.waiting_for = None
+        self.awaiting_prompt = False
         self.video_params = {}
         self.last_prompt = None
         self.tryon_data = {}

@@ -13,6 +13,11 @@ from app.core.bot import get_bot
 from .commands import ensure_user_exists, get_user_language, get_user_data
 from .video_handlers import (
     handle_video_menu,
+    handle_generate_menu,
+    handle_lego_menu,
+    handle_mode_helper,
+    handle_mode_manual,
+    handle_mode_meme,
     handle_orientation_choice,
     handle_audio_choice,
     handle_video_regenerate,
@@ -79,6 +84,25 @@ def register_callbacks():
     dp.callback_query.register(callback_tryon_confirm, F.data == "tryon_confirm")
     dp.callback_query.register(callback_tryon_swap, F.data == "tryon_swap")
     dp.callback_query.register(callback_tryon_reset, F.data == "tryon_reset")
+    
+    # Дополнительные обработчики
+    dp.callback_query.register(callback_generate, F.data == "generate")
+    dp.callback_query.register(callback_mode_helper, F.data == "mode_helper")
+    dp.callback_query.register(callback_mode_manual, F.data == "mode_manual")
+    dp.callback_query.register(callback_mode_meme, F.data == "mode_meme")
+    dp.callback_query.register(callback_video_regenerate, F.data == "video_regenerate")
+    dp.callback_query.register(callback_video_to_helper, F.data == "video_to_helper")
+    dp.callback_query.register(callback_show_topup, F.data == "show_topup")
+    dp.callback_query.register(callback_show_subscriptions, F.data == "show_subscriptions")
+    dp.callback_query.register(callback_show_permanent_coins, F.data == "show_permanent_coins")
+    dp.callback_query.register(callback_show_models_cost, F.data == "show_models_cost")
+    
+    # LEGO обработчики
+    dp.callback_query.register(callback_lego_single, F.data == "lego_single")
+    dp.callback_query.register(callback_lego_reportage, F.data == "lego_reportage")
+    dp.callback_query.register(callback_lego_regenerate, F.data == "lego_regenerate")
+    dp.callback_query.register(callback_lego_improve, F.data == "lego_improve")
+    dp.callback_query.register(callback_lego_embed_replica, F.data == "lego_embed_replica")
     
     # Fallback для необработанных callback'ов (должен быть последним!)
     dp.callback_query.register(callback_fallback)

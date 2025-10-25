@@ -207,6 +207,15 @@ async def process_prompt_input(message: Message, state, prompt: str):
         # Используем промпт как есть и сразу генерируем
         state.last_prompt = prompt
         await generate_video(message, state)
+    
+    else:
+        # Если режим не установлен, показываем меню выбора
+        log.warning(f"⚠️ process_prompt_input: video_mode не установлен для пользователя {user_id}")
+        await message.answer(
+            t("error.no_mode_selected"),
+            reply_markup=build_main_menu()
+        )
+        clear_user_state(user_id)
 
 async def ask_orientation(message: Message, state, prompt: str):
     """Запрос ориентации видео"""

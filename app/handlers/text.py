@@ -65,7 +65,7 @@ async def handle_text_message(message: Message):
             # Умный помощник - улучшаем промпт через GPT
             from app.services.gpt_templates import improve_scene
             improved_prompt = improve_scene(text, "complex")
-            await message.reply_text(
+            await message.answer(
                 f"🧠 **Улучшенный промпт:**\n\n{improved_prompt}\n\n"
                 f"Генерирую видео..."
             )
@@ -76,7 +76,7 @@ async def handle_text_message(message: Message):
             # Neurokudo режим - специальная обработка
             from app.services.gpt_templates import improve_scene
             improved_prompt = improve_scene(text, "absurd")
-            await message.reply_text(
+            await message.answer(
                 f"🔮 **Neurokudo промпт:**\n\n{improved_prompt}\n\n"
                 f"Генерирую видео в стиле Neurokudo..."
             )
@@ -87,7 +87,7 @@ async def handle_text_message(message: Message):
             from app.services.gpt_templates import random_meme_scene, improve_scene
             if text.lower() in ["случайно", "случайная", "random", "мем"]:
                 meme_prompt = random_meme_scene()
-                await message.reply_text(
+                await message.answer(
                     f"🤡 **Случайная мемная сцена:**\n\n{meme_prompt}\n\n"
                     f"Генерирую мем..."
                 )
@@ -95,7 +95,7 @@ async def handle_text_message(message: Message):
             else:
                 # Улучшаем пользовательский промпт для мемов
                 meme_prompt = improve_scene(text, "absurd")
-                await message.reply_text(
+                await message.answer(
                     f"🤡 **Мемный промпт:**\n\n{meme_prompt}\n\n"
                     f"Генерирую мем..."
                 )
@@ -103,7 +103,7 @@ async def handle_text_message(message: Message):
                 
         elif mode == "manual":
             # Ручной режим - прямая генерация
-            await message.reply_text("🎬 Генерирую видео...")
+            await message.answer("🎬 Генерирую видео...")
             await handle_text_input(message, text)
         
         # Сбрасываем состояние
